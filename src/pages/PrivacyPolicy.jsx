@@ -16,26 +16,31 @@ export default function PrivacyPolicy() {
         </div>
         <h1 className="font-display font-extrabold text-4xl sm:text-5xl tracking-tight mb-8">Privacy Policy</h1>
         <div className="space-y-6 text-muted leading-relaxed text-[15px]">
-          <p>Last updated: July 2026</p>
+          <p>Last updated: September 2026</p>
           <p>
-            Aiventre ("we", "us") builds AI-powered sales tools for small businesses. This policy explains what
-            information we collect, how we use it, and the choices you have.
+            Aiventre ("we", "us") builds an AI front desk for clinics: it answers calls and messages, books
+            appointments and sends reminders on the clinic's behalf. This policy explains what information we
+            collect, how we use it, and the choices you have.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we collect</h2>
           <p>
-            We collect the business and contact details you provide to us, along with information about the leads
-            and customers you ask Aiventre to reach out to on your behalf, so we can send emails, place calls, and
-            schedule appointments as instructed.
+            We collect the details clinics give us to set up their account. When a patient calls or messages a
+            clinic that uses Aiventre, we process what they share in that conversation (such as name, phone
+            number, the reason for the visit and the appointment time) so we can answer them and book on the
+            clinic's behalf. We do not buy or scrape contact lists.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">How we use it</h2>
           <p>
-            Data is used solely to operate your account — finding leads, sending outreach, handling calls, and
-            managing bookings. We do not sell your data or your customers' data to third parties.
+            Data is used only to run the service for the clinic — answering enquiries, booking and rescheduling
+            appointments, sending reminders, and showing conversations in the clinic's dashboard. We do not sell
+            clinic or patient data, and we only message patients who contacted the clinic or are already its
+            patients.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Data security</h2>
           <p>
-            All data is encrypted in transit and at rest. Access is limited to the systems required to deliver the
-            service to you.
+            Access to data is limited to the people and systems needed to run the service. Clinics can ask us to
+            export or delete their data, and patients can ask the clinic or us to delete theirs, by writing to the
+            address below.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Contact</h2>
           <p>

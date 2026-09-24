@@ -16,20 +16,22 @@ export default function Terms() {
         </div>
         <h1 className="font-display font-extrabold text-4xl sm:text-5xl tracking-tight mb-8">Terms of Service</h1>
         <div className="space-y-6 text-muted leading-relaxed text-[15px]">
-          <p>Last updated: July 2026</p>
+          <p>Last updated: September 2026</p>
           <p>
             By using Aiventre, you agree to the following terms. Please read them carefully before connecting your
-            business.
+            clinic.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">The service</h2>
           <p>
-            Aiventre finds leads for your business and automates outreach — email, calls, WhatsApp/SMS, and
-            appointment booking — on your behalf, based on the preferences you configure.
+            Aiventre answers calls and messages to your clinic, books and reschedules appointments, and sends
+            confirmations and reminders on your behalf, using the doctors, timings, prices and rules you give us.
+            It does not give medical advice; medical questions, emergencies and complaints are handed to your staff.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Your responsibilities</h2>
           <p>
-            You are responsible for ensuring the outreach Aiventre sends on your behalf complies with applicable
-            laws in your jurisdiction, including consent and communication regulations.
+            You are responsible for keeping your clinic information (doctors, timings, prices, services) accurate
+            and for following up on conversations Aiventre flags to your staff. Aiventre only contacts people who
+            contacted your clinic or are already your patients.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Billing</h2>
           <p>

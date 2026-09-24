@@ -1,16 +1,38 @@
-# React + Vite
+# Aiventre
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Marketing site and clickable demo for **Aiventre — the AI front desk for Indian clinics**. It answers every
+call and WhatsApp message, books the appointment, sends reminders, and gives the owner a daily summary.
 
-Currently, two official plugins are available:
+- `/` — landing page
+- `/demo` — interactive dashboard with sample data (today view, conversation transcripts, calendar, and a
+  simulated incoming call that books a slot and sends a WhatsApp confirmation)
+- `/privacy`, `/terms`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The actual product (voice agent, WhatsApp integration, booking backend) is not in this repo yet.
 
-## React Compiler
+## Develop
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```sh
+npm install
+npm run dev     # http://localhost:5173
+npm run build
+npm run lint
+```
 
-## Expanding the Oxlint configuration
+## Configure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | What it does |
+|---|---|
+| `VITE_FORM_ENDPOINT` | Where the early-access form posts (any Formspree-compatible JSON endpoint). Empty → the form opens the visitor's email app instead. |
+| `VITE_CONTACT_EMAIL` | Shown on the site and used for the email fallback. |
+| `VITE_CONTACT_PHONE` | Shows "Call us" links. Hidden when empty. |
+| `VITE_WHATSAPP_NUMBER` | Shows a "Chat on WhatsApp" link. Digits with country code. Hidden when empty. |
+
+Set the same variables in your host's dashboard for production builds.
+
+## Deploy
+
+It's a static SPA. `vercel.json` (Vercel) and `public/_redirects` (Netlify) rewrite all paths to
+`index.html` so `/demo`, `/privacy` and `/terms` work on direct load.
