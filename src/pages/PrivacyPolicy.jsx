@@ -18,29 +18,32 @@ export default function PrivacyPolicy() {
         <div className="space-y-6 text-muted leading-relaxed text-[15px]">
           <p>Last updated: September 2026</p>
           <p>
-            Aiventre ("we", "us") builds an AI front desk for clinics: it answers calls and messages, books
-            appointments and sends reminders on the clinic's behalf. This policy explains what information we
-            collect, how we use it, and the choices you have.
+            Aiventre ("we", "us") is an AI sales assistant for manufacturing job shops. This policy explains what
+            information the service handles, how it is used, and the choices you have.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we collect</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we handle</h2>
           <p>
-            We collect the details clinics give us to set up their account. When a patient calls or messages a
-            clinic that uses Aiventre, we process what they share in that conversation (such as name, phone
-            number, the reason for the visit and the appointment time) so we can answer them and book on the
-            clinic's behalf. We do not buy or scrape contact lists.
+            Your shop profile (machines, capabilities, contact details), the buyer companies you or the AI agent add
+            to your list, email drafts, replies you paste in, and drawings you upload for quoting. Buyer details are
+            limited to business information the company has published itself, such as a website, a general or
+            purchase email address and an office phone number, together with the page where it was found. We do not
+            buy contact lists.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">How we use it</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Where it is stored</h2>
           <p>
-            Data is used only to run the service for the clinic — answering enquiries, booking and rescheduling
-            appointments, sending reminders, and showing conversations in the clinic's dashboard. We do not sell
-            clinic or patient data, and we only message patients who contacted the clinic or are already its
-            patients.
+            During the pilot, your data is saved in your own browser on your device. It is not stored on our
+            servers. You can download a backup or clear it at any time.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Data security</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">AI processing</h2>
           <p>
-            Access to data is limited to the people and systems needed to run the service. Clinics can ask us to
-            export or delete their data, and patients can ask the clinic or us to delete theirs, by writing to the
-            address below.
+            When you use an AI feature, the relevant information (for example your shop profile and the text or
+            drawing you submitted) is sent through our server to our AI provider, Anthropic, to generate the result.
+            It is used only to provide that result. The AI agent also searches the public web to find companies.
+          </p>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we don't do</h2>
+          <p>
+            We do not sell your data, and Aiventre never sends emails or makes calls on your behalf — you review and
+            send everything yourself.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Contact</h2>
           <p>

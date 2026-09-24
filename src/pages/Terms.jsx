@@ -18,25 +18,29 @@ export default function Terms() {
         <div className="space-y-6 text-muted leading-relaxed text-[15px]">
           <p>Last updated: September 2026</p>
           <p>
-            By using Aiventre, you agree to the following terms. Please read them carefully before connecting your
-            clinic.
+            By using Aiventre, you agree to the following terms. Please read them carefully. The service is in a
+            pilot phase and may change.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">The service</h2>
           <p>
-            Aiventre answers calls and messages to your clinic, books and reschedules appointments, and sends
-            confirmations and reminders on your behalf, using the doctors, timings, prices and rules you give us.
-            It does not give medical advice; medical questions, emergencies and complaints are handed to your staff.
+            Aiventre helps manufacturing job shops find potential buyers, draft outreach emails, sort replies and
+            estimate machining time for quotes. It does not send messages or make calls for you.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Your responsibilities</h2>
           <p>
-            You are responsible for keeping your clinic information (doctors, timings, prices, services) accurate
-            and for following up on conversations Aiventre flags to your staff. Aiventre only contacts people who
-            contacted your clinic or are already your patients.
+            You decide what to send and to whom. Check each buyer and each draft before you contact anyone, keep
+            outreach relevant and business-to-business, and respect any request not to be contacted again. You are
+            responsible for the messages you send and for complying with applicable laws.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Billing</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">AI output</h2>
           <p>
-            Subscription plans are billed as agreed at signup. You may cancel at any time; access continues until
-            the end of the current billing period.
+            AI-generated research, drafts and estimates can be incomplete or wrong. Machining time and price
+            estimates are guidance only; you are responsible for the prices you quote. Verify company details at the
+            source link provided.
+          </p>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Your data</h2>
+          <p>
+            During the pilot your data is stored in your browser. Keep your own backups using the backup feature.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Contact</h2>
           <p>

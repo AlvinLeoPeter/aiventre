@@ -10,19 +10,18 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldCheck,
-  Hand,
-  Users,
-  PhoneCall,
-  PhoneMissed,
-  PhoneForwarded,
-  MessageCircle,
-  CalendarCheck,
+  Search,
+  Send,
+  Inbox,
+  Calculator,
+  FileText,
   BellRing,
-  Repeat,
+  MessageCircle,
   Bot,
   Menu,
   X,
-  Play,
+  PhoneOff,
+  Building2,
 } from 'lucide-react'
 import {
   CONTACT_EMAIL,
@@ -48,34 +47,34 @@ const NAV_LINKS = [
 
 const SERVICES_FULL = [
   {
-    icon: PhoneCall,
-    title: 'AI Phone Receptionist',
-    text: 'Answers calls in Hindi, English or Hinglish when your staff are busy or the clinic is closed. Knows your doctors, timings, treatments and prices.',
+    icon: FileText,
+    title: 'Capability Profile',
+    text: 'Describe your shop in your own words. Aiventre turns it into a clean one-page profile — machines, materials, tolerances, industries — ready to send to any purchase team.',
   },
   {
-    icon: MessageCircle,
-    title: 'WhatsApp Auto-reply',
-    text: 'Instant replies to WhatsApp and Instagram enquiries — prices, timings, directions — and books the appointment in the same chat.',
+    icon: Search,
+    title: 'AI Buyer Research',
+    text: 'The AI agent searches the web for companies that buy parts like yours — OEMs, Tier-1/2 suppliers, GeM tenders — and saves each one with the source, so you can check it.',
   },
   {
-    icon: CalendarCheck,
-    title: 'Booking Into Your Calendar',
-    text: 'Books into Google Calendar or the calendar you already use. No double-booking, and no new software for your front desk to learn.',
+    icon: Send,
+    title: 'Emails You Approve',
+    text: 'Short, specific emails written for each buyer. Nothing goes out until you read it and send it from your own email.',
   },
   {
     icon: BellRing,
-    title: 'Reminders & Fewer No-shows',
-    text: 'WhatsApp confirmation right away, reminders before the visit and one-tap rescheduling — so empty chairs get refilled.',
+    title: 'Follow-up Reminders',
+    text: 'Most orders come after the second or third message. Aiventre reminds you who to follow up with, and drafts the follow-up.',
   },
   {
-    icon: PhoneMissed,
-    title: 'Missed-call Callback',
-    text: 'If a patient hangs up before anyone picks up, Aiventre calls them back within a minute — before they dial the next clinic.',
+    icon: Inbox,
+    title: 'Reply Sorting',
+    text: 'Paste a buyer’s reply and see what it means — quote request, call me, not now — with the next step and a suggested response.',
   },
   {
-    icon: Repeat,
-    title: 'Patient Recalls',
-    text: 'Reminds your own patients when a cleaning, follow-up or next sitting is due. Only people who are already your patients.',
+    icon: Calculator,
+    title: 'Quote Helper',
+    text: 'Upload a drawing. The AI reads material, features and tolerances and estimates machining time. You set the rate and decide the price.',
   },
 ]
 
@@ -129,12 +128,12 @@ function Navbar() {
               </a>
             ))}
             <Link
-              to="/demo"
+              to="/app"
               className={`text-sm font-medium tracking-tight lift-on-hover ${
                 scrolled ? 'text-ink/70 hover:text-primary' : 'text-white/90 hover:text-white'
               } transition-colors`}
             >
-              Live demo
+              Open the app
             </Link>
           </div>
 
@@ -142,7 +141,7 @@ function Navbar() {
             href="#contact"
             className="hidden lg:inline-flex magnetic-btn items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg shadow-primary/30"
           >
-            Get early access
+            Join the pilot
             <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
           </a>
 
@@ -185,8 +184,8 @@ function Navbar() {
                 {link.label}
               </a>
             ))}
-            <Link to="/demo" className="font-display text-3xl font-semibold text-ink py-3 border-b border-divider">
-              Live demo
+            <Link to="/app" className="font-display text-3xl font-semibold text-ink py-3 border-b border-divider">
+              Open the app
             </Link>
           </div>
           <a
@@ -194,7 +193,7 @@ function Navbar() {
             onClick={() => setOpen(false)}
             className="mt-8 magnetic-btn flex items-center justify-center gap-2 bg-primary text-white px-6 py-4 rounded-full font-semibold w-full"
           >
-            Get early access
+            Join the pilot
             <ArrowUpRight className="h-4 w-4" />
           </a>
         </div>
@@ -207,9 +206,9 @@ function Navbar() {
    Hero
 ---------------------------------------------------------------- */
 const HERO_FEED = [
-  { Icon: PhoneMissed, from: 'Missed call · 9:42 PM', to: 'Booked · tomorrow 11:15 AM' },
-  { Icon: MessageCircle, from: 'WhatsApp · 10:05 PM', to: 'Booked · tomorrow 10:30 AM' },
-  { Icon: PhoneCall, from: 'Call during a procedure', to: 'Answered · slot held' },
+  { Icon: Search, from: '12 tractor-parts makers near Pune', to: 'Saved with sources' },
+  { Icon: Send, from: 'Email to purchase@… drafted', to: 'Waiting for your OK' },
+  { Icon: Inbox, from: 'Reply: “Please quote 500 pcs”', to: 'Quote ready' },
 ]
 
 function Hero() {
@@ -245,39 +244,39 @@ function Hero() {
       <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center text-center pt-28 pb-16">
         <div className="px-6 sm:px-10 lg:px-16 max-w-4xl">
           <p className="hero-meta font-mono text-xs uppercase tracking-[0.25em] text-white/60 mb-6">
-            ╱ The AI front desk for Indian clinics
+            ╱ Orders for CNC &amp; VMC job shops
           </p>
           <h1 className="font-display font-extrabold text-white leading-[0.95] tracking-tight">
-            <span className="hero-line-1 block text-4xl sm:text-5xl md:text-6xl">Never miss</span>
+            <span className="hero-line-1 block text-4xl sm:text-5xl md:text-6xl">Idle machines?</span>
             <span
               className="hero-line-2 block font-serif italic font-medium text-primary-light text-6xl sm:text-7xl md:text-8xl lg:text-9xl mt-2"
               style={{ lineHeight: '0.92' }}
             >
-              another patient.
+              Let’s fill them.
             </span>
           </h1>
 
           <p className="hero-meta mx-auto max-w-xl text-white/75 text-base sm:text-lg mt-8 leading-relaxed">
-            Aiventre answers every call and WhatsApp in seconds — in Hindi, English or Hinglish — books the
-            appointment, sends the reminders, and tells you what happened.
-            <span className="text-white"> Even mid-procedure. Even at 10 PM.</span>
+            Aiventre’s AI agent finds companies that buy machined parts, writes the emails for you to approve,
+            sorts the replies and helps you quote from a drawing.
+            <span className="text-white"> You make the calls. You win the orders.</span>
           </p>
 
           <div className="hero-cta mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/demo"
-              className="magnetic-btn group inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-7 py-4 rounded-full shadow-2xl shadow-primary/40"
-            >
-              <Play className="h-4 w-4" />
-              Try the live demo
-            </Link>
             <a
               href="#contact"
+              className="magnetic-btn group inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-7 py-4 rounded-full shadow-2xl shadow-primary/40"
+            >
+              Join the pilot
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </a>
+            <Link
+              to="/app"
               className="lift-on-hover inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white border border-white/20 font-medium px-7 py-4 rounded-full"
             >
-              Get early access
-              <ArrowRight className="h-4 w-4" />
-            </a>
+              Open the app
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
           </div>
 
           <ul className="hero-cta mx-auto mt-12 max-w-lg space-y-2 text-left">
@@ -304,13 +303,13 @@ function Hero() {
 }
 
 /* ----------------------------------------------------------------
-   Feature Card 1 — Enquiry Shuffler
+   Feature Card 1 — Buyer Shuffler
 ---------------------------------------------------------------- */
-function EnquiryShuffler() {
+function BuyerShuffler() {
   const items = [
-    { tag: 'Missed call', label: '“Kya Sunday ko root canal hota hai?”', source: '9:42 PM' },
-    { tag: 'WhatsApp', label: '“Teeth cleaning ka price kya hai?”', source: '10:05 PM' },
-    { tag: 'Instagram', label: '“Is Dr. Farah free tomorrow?”', source: '11:20 PM' },
+    { tag: 'Tractor parts', label: 'Transmission housing maker, outsources VMC work', source: 'Pune' },
+    { tag: 'Pumps', label: 'Pump OEM buying machined impeller housings', source: 'Kolhapur' },
+    { tag: 'GeM tender', label: 'Railway workshop: 2,000 machined brackets', source: 'Tender' },
   ]
   const [stack, setStack] = useState(items)
 
@@ -349,7 +348,7 @@ function EnquiryShuffler() {
             </div>
             <div className="mt-4 font-display text-lg font-semibold text-ink leading-tight">{item.label}</div>
             <div className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-emerald-700">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Replied in 4 sec
+              <CheckCircle2 className="h-3.5 w-3.5" /> Saved with source link
             </div>
           </div>
         )
@@ -362,21 +361,21 @@ function EnquiryShuffler() {
    Feature Card 2 — Signal Pulse (AI call engine)
 ---------------------------------------------------------------- */
 const CALL_STATUSES = [
-  { text: 'Waiting for calls', label: 'Idle', tone: 'emerald' },
-  { text: 'Incoming call · +91 98•••307', label: 'Ringing', tone: 'accent' },
-  { text: 'Speaking Hinglish · finding a slot', label: 'On call', tone: 'primary' },
-  { text: 'Booked · WhatsApp sent', label: 'Booked', tone: 'emerald' },
+  { text: 'Researching buyers near you', label: 'Searching', tone: 'emerald' },
+  { text: 'Email drafted · waiting for your OK', label: 'Draft', tone: 'accent' },
+  { text: 'Sent by you · follow-up in 4 days', label: 'Sent', tone: 'primary' },
+  { text: 'Reply: “please quote 500 pcs”', label: 'Quote', tone: 'emerald' },
 ]
 
 function SignalPulse() {
   const [statusIdx, setStatusIdx] = useState(0)
-  const [count, setCount] = useState(7)
+  const [count, setCount] = useState(3)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setStatusIdx((idx) => {
         const next = (idx + 1) % CALL_STATUSES.length
-        if (CALL_STATUSES[next].label === 'Booked') {
+        if (CALL_STATUSES[next].label === 'Quote') {
           setCount((c) => c + 1)
         }
         return next
@@ -421,11 +420,11 @@ function SignalPulse() {
           <svg className="h-3.5 w-3.5 text-primary-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 12h4l2-7 4 14 2-7h4" />
           </svg>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary-dark">AI Receptionist</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary-dark">Outreach engine</span>
         </div>
         <div className="flex items-baseline gap-1">
           <span className="font-display font-bold text-sm text-ink tabular-nums">{String(count).padStart(2, '0')}</span>
-          <span className="font-mono text-[9px] uppercase tracking-widest text-muted">booked today</span>
+          <span className="font-mono text-[9px] uppercase tracking-widest text-muted">quote requests</span>
         </div>
       </div>
 
@@ -531,78 +530,45 @@ function SignalPulse() {
 }
 
 /* ----------------------------------------------------------------
-   Feature Card 3 — Cursor Scheduler (Appointment Booking)
+   Feature Card 3 — Quote Widget
 ---------------------------------------------------------------- */
-function BookingScheduler() {
-  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const QUOTE_STEPS = [
+  { label: 'Reading drawing…', value: '' },
+  { label: 'Material', value: 'EN8 · Ø40 bar' },
+  { label: 'Machining time', value: '10.5 min / part' },
+  { label: 'Your price', value: '₹221 / part' },
+]
+
+function QuoteWidget() {
   const [step, setStep] = useState(0)
-  const activeDay = 2
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStep((prev) => (prev + 1) % 5)
-    }, 1400)
+    const interval = setInterval(() => setStep((s) => (s + 1) % (QUOTE_STEPS.length + 1)), 1300)
     return () => clearInterval(interval)
   }, [])
-
-  const cursorPos = (() => {
-    switch (step) {
-      case 0:
-        return { x: 8, y: 110, opacity: 0 }
-      case 1:
-        return { x: 60, y: 60, opacity: 1 }
-      case 2:
-        return { x: 60 + activeDay * 36, y: 60, opacity: 1 }
-      case 3:
-        return { x: 60 + activeDay * 36, y: 60, opacity: 1 }
-      case 4:
-        return { x: 130, y: 130, opacity: 1 }
-      default:
-        return { x: 8, y: 110, opacity: 0 }
-    }
-  })()
 
   return (
     <div className="relative h-44 w-full bg-white border border-divider rounded-3xl p-5 overflow-hidden" aria-hidden="true">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-muted">This week · Dr. Rao</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted">bracket_rev2.pdf</span>
         <span className="font-mono text-[10px] uppercase tracking-widest text-primary-dark bg-primary/10 px-2 py-0.5 rounded-full">
-          Booking
+          Quote
         </span>
       </div>
-
-      <div className="grid grid-cols-7 gap-2 mb-4">
-        {days.map((d, idx) => (
-          <div
-            key={idx}
-            className={`flex flex-col items-center justify-center h-9 rounded-xl text-xs font-medium transition-all duration-300 ${
-              step >= 3 && idx === activeDay
-                ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/30'
-                : 'bg-background text-ink'
-            }`}
+      <ul className="space-y-1.5">
+        {QUOTE_STEPS.slice(1).map((s, i) => (
+          <li
+            key={s.label}
+            className={`flex items-center justify-between rounded-xl px-3 py-1.5 text-xs transition-all duration-500 ${
+              step > i + 1 ? 'bg-background opacity-100' : 'opacity-30'
+            } ${i === 2 && step > 3 ? '!bg-accent/15' : ''}`}
           >
-            <span className="font-mono text-[9px] text-muted">{d}</span>
-            <span className="font-display font-semibold text-sm">{idx + 7}</span>
-          </div>
+            <span className="text-muted">{s.label}</span>
+            <span className={`font-mono font-semibold ${i === 2 ? 'text-accent-dark' : 'text-ink'}`}>{step > i + 1 ? s.value : '—'}</span>
+          </li>
         ))}
-      </div>
-
-      <div
-        className={`w-full py-2.5 rounded-2xl font-medium text-xs text-center transition-all duration-300 ${
-          step === 4 ? 'bg-accent text-white scale-[1.02] shadow-md shadow-accent/30' : 'bg-divider/40 text-muted'
-        }`}
-      >
-        {step >= 3 ? '✓ Booked · reminder set' : 'Finding a free slot…'}
-      </div>
-
-      <div
-        className="absolute pointer-events-none transition-all duration-500 ease-out"
-        style={{ left: `${cursorPos.x}px`, top: `${cursorPos.y}px`, opacity: cursorPos.opacity, transform: step === 3 ? 'scale(0.85)' : 'scale(1)' }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M5 3L19 12L12 13L9 20L5 3Z" fill="#15121F" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
-        </svg>
-      </div>
+      </ul>
+      <p className="mt-2 font-mono text-[10px] text-muted">{step <= 1 ? QUOTE_STEPS[0].label : 'You decide the final price'}</p>
     </div>
   )
 }
@@ -639,25 +605,25 @@ function Features() {
 
   const cards = [
     {
-      eyebrow: '01 / Answer',
-      heading: 'Every enquiry, answered',
-      sub: 'Calls, WhatsApp & DMs',
-      text: 'Patients message three clinics and book with whoever replies first. Aiventre replies in seconds — with your real prices, timings and doctors.',
-      Component: EnquiryShuffler,
+      eyebrow: '01 / Find',
+      heading: 'Buyers who need your machines',
+      sub: 'Researched by AI, with sources',
+      text: 'Tell the agent “I have idle VMC time — find me work.” It searches for companies that outsource parts like yours and saves them with where it found them.',
+      Component: BuyerShuffler,
     },
     {
-      eyebrow: '02 / Talk',
-      heading: 'An AI that picks up',
-      sub: 'In Hindi, English or Hinglish',
-      text: 'When your front desk is busy or the clinic is closed, a natural-sounding AI answers the phone, handles the questions and finds a slot.',
+      eyebrow: '02 / Reach out',
+      heading: 'Emails you approve',
+      sub: 'Written for each buyer',
+      text: 'Short, specific emails that mention what the buyer makes and what your machines can do. You read, edit and send — from your own email.',
       Component: SignalPulse,
     },
     {
-      eyebrow: '03 / Book',
-      heading: 'Straight into your calendar',
-      sub: 'Confirmed on WhatsApp',
-      text: 'The appointment lands in your calendar, the patient gets a WhatsApp confirmation, and reminders go out before the visit.',
-      Component: BookingScheduler,
+      eyebrow: '03 / Quote',
+      heading: 'Quotes in minutes',
+      sub: 'From the drawing',
+      text: 'Upload the buyer’s drawing. The AI estimates machining time; your hour rate and margin turn it into a price. You always decide.',
+      Component: QuoteWidget,
     },
   ]
 
@@ -667,8 +633,8 @@ function Features() {
         <div className="feature-heading max-w-3xl mb-16 sm:mb-24">
           <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ What Aiventre Does</span>
           <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink mt-4 leading-[1.05] tracking-tight">
-            Answer. Book. Remind.
-            <span className="block font-serif italic font-medium text-primary-dark mt-1">Without your front desk.</span>
+            Find. Pitch. Quote.
+            <span className="block font-serif italic font-medium text-primary-dark mt-1">While your machines run.</span>
           </h2>
         </div>
 
@@ -768,27 +734,27 @@ function Pillars() {
   const pillars = [
     {
       n: '01',
-      title: 'Speed',
-      target: 5,
-      suffix: 'sec',
-      label: 'to reply on WhatsApp',
-      desc: 'Most clinics reply to a WhatsApp enquiry hours later. By then the patient has booked somewhere else.',
+      title: 'Reach',
+      target: 100,
+      suffix: '+',
+      label: 'buyers researched a month',
+      desc: 'Real companies that buy parts like yours, each saved with the page it came from — not a bought list.',
     },
     {
       n: '02',
-      title: 'Always On',
-      target: 24,
-      suffix: '/7',
-      label: 'calls answered',
-      desc: 'During procedures, over lunch, after 8 PM and on Sundays — every call gets picked up and every enquiry gets an answer.',
+      title: 'Control',
+      target: 0,
+      suffix: '',
+      label: 'emails sent without your OK',
+      desc: 'The AI drafts. You read, change and send from your own email. Your name, your reputation, your decision.',
     },
     {
       n: '03',
-      title: 'Show-ups',
-      target: 2,
-      suffix: '×',
-      label: 'WhatsApp reminders per visit',
-      desc: 'A reminder the day before and one a couple of hours before, with one-tap reschedule — so a cancelled slot can be refilled.',
+      title: 'Speed',
+      target: 24,
+      suffix: 'h',
+      label: 'to send a quote',
+      desc: 'Buyers often go with the first sensible quote. The quote helper gets you from drawing to price the same day.',
     },
   ]
 
@@ -808,7 +774,7 @@ function Pillars() {
             <span className="inline-block font-mono text-xs uppercase tracking-[0.3em] text-primary-dark mb-5">╱ Built Around</span>
             <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink leading-[1.05] tracking-tight">
               Three promises
-              <span className="block font-serif italic font-medium text-primary-dark">to every clinic.</span>
+              <span className="block font-serif italic font-medium text-primary-dark">to every shop.</span>
             </h2>
           </div>
           <p className="text-muted text-lg leading-relaxed max-w-md lg:text-right">
@@ -882,61 +848,55 @@ function MockRow({ label, value, on = true }) {
   )
 }
 
-function ConnectMock() {
+function ProfileMock() {
   return (
     <div className="w-full max-w-xs space-y-2.5">
       <p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-white/50">
-        <PhoneForwarded className="h-3.5 w-3.5" /> Setup · Smile Studio
+        <FileText className="h-3.5 w-3.5" /> Capability profile
       </p>
-      <MockRow label="Forward when busy" value="ON" />
-      <MockRow label="Forward when unanswered" value="ON" />
-      <MockRow label="WhatsApp Business" value="Connected ✓" />
-      <MockRow label="Google Calendar" value="Connected ✓" />
-      <MockRow label="Prices & timings" value="12 treatments" />
+      <MockRow label="VMC 850" value="× 2" />
+      <MockRow label="CNC lathe" value="× 1" />
+      <MockRow label="Materials" value="MS · EN8 · Al" />
+      <MockRow label="Tolerance" value="±0.02 mm" />
+      <MockRow label="Industries" value="Tractor · Auto" />
     </div>
   )
 }
 
-function Bubble({ ai, children }) {
-  return (
-    <div className={`flex ${ai ? 'justify-end' : 'justify-start'}`}>
-      <p
-        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-snug ${
-          ai ? 'rounded-br-sm bg-primary text-white' : 'rounded-bl-sm bg-white text-ink'
-        }`}
-      >
-        {children}
-      </p>
-    </div>
-  )
-}
-
-function ConversationMock() {
+function BuyerMock() {
+  const rows = [
+    ['Tractor transmission maker', 'Pune'],
+    ['Pump & valve OEM', 'Kolhapur'],
+    ['Agri-equipment Tier-1', 'Nashik'],
+  ]
   return (
     <div className="w-full max-w-xs space-y-2">
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-white/50">Call · 9:42 PM · Hinglish</p>
-      <Bubble>Clinic band hai kya? Daant mein dard hai.</Bubble>
-      <Bubble ai>Namaste! Kal subah 11:15 Dr. Karan free hain. Book kar doon?</Bubble>
-      <Bubble>Haan, kar do.</Bubble>
-      <p className="mx-auto w-fit rounded-full bg-accent/15 px-3 py-1 font-mono text-[10px] text-accent">Booked · 11:15 AM</p>
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-white/50">Saved by the agent</p>
+      {rows.map(([name, city]) => (
+        <div key={name} className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-2.5 text-ink">
+          <Building2 className="h-4 w-4 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{name}</span>
+          <span className="font-mono text-[10px] text-muted">{city}</span>
+        </div>
+      ))}
+      <p className="mx-auto w-fit rounded-full bg-accent/15 px-3 py-1 font-mono text-[10px] text-accent">3 emails drafted · review</p>
     </div>
   )
 }
 
-function ConfirmMock() {
+function ReplyMock() {
   return (
     <div className="w-full max-w-xs space-y-2.5">
       <p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-white/50">
-        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+        <Inbox className="h-3.5 w-3.5" /> Reply sorted
       </p>
       <p className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-[13px] leading-snug text-ink">
-        Reminder: your appointment is tomorrow at 11:15 AM with Dr. Karan Mehta. Reply 1 to confirm, 2 to
-        reschedule.
+        “Please share your best price for 500 pcs as per attached drawing.”
       </p>
-      <div className="flex justify-end">
-        <p className="rounded-2xl rounded-br-sm bg-[#DCF8C6] px-3.5 py-2 text-[13px] text-ink">1</p>
-      </div>
-      <p className="mx-auto w-fit rounded-full bg-accent/15 px-3 py-1 font-mono text-[10px] text-accent">Confirmed ✓</p>
+      <p className="mx-auto w-fit rounded-full bg-accent/15 px-3 py-1 font-mono text-[10px] text-accent">Wants a quote</p>
+      <p className="rounded-2xl bg-white/10 px-3.5 py-2.5 text-[13px] leading-snug text-white/80">
+        Next: run the drawing through the quote helper and reply today.
+      </p>
     </div>
   )
 }
@@ -975,27 +935,27 @@ function Protocol() {
   const steps = [
     {
       num: '01',
-      title: 'Keep your number',
-      tagline: 'We set it up with you.',
-      text: 'Turn on call forwarding for busy and unanswered calls, connect WhatsApp and your calendar, and tell us your doctors, timings and prices. One afternoon, done together.',
-      Visual: ConnectMock,
-      meta: 'Step 1 / Connect',
+      title: 'Tell us about your shop',
+      tagline: 'In your own words.',
+      text: 'Type or paste what you have — machines, materials, what you’ve made before. Aiventre builds your capability profile. We set it up with you on the first call.',
+      Visual: ProfileMock,
+      meta: 'Step 1 / Profile',
     },
     {
       num: '02',
-      title: 'Aiventre talks to patients',
-      tagline: 'You keep treating.',
-      text: 'It answers calls and messages, books appointments and handles reschedules. Medical questions, emergencies and complaints go straight to your staff.',
-      Visual: ConversationMock,
-      meta: 'Step 2 / Answer',
+      title: 'The agent finds buyers',
+      tagline: 'And drafts the emails.',
+      text: 'It researches companies that buy parts like yours, saves each one with its source, and writes a short email for each. You check, edit and send.',
+      Visual: BuyerMock,
+      meta: 'Step 2 / Find',
     },
     {
       num: '03',
-      title: 'Patients show up',
-      tagline: 'You see everything.',
-      text: 'Confirmations and reminders go out on WhatsApp. Every conversation is in your dashboard, and you get a summary on WhatsApp every morning.',
-      Visual: ConfirmMock,
-      meta: 'Step 3 / Show up',
+      title: 'You call, quote and win',
+      tagline: 'The relationship stays yours.',
+      text: 'Replies get sorted into “wants a quote”, “call me” or “not now”. The quote helper turns a drawing into a price. You make the call and close the order.',
+      Visual: ReplyMock,
+      meta: 'Step 3 / Win',
     },
   ]
 
@@ -1005,7 +965,7 @@ function Protocol() {
         <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ How It Works</span>
         <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink mt-4 leading-[1.05] tracking-tight max-w-3xl">
           Three steps.
-          <span className="block font-serif italic font-medium text-primary-dark">No new software for your staff.</span>
+          <span className="block font-serif italic font-medium text-primary-dark">You stay in charge.</span>
         </h2>
       </div>
 
@@ -1085,13 +1045,13 @@ function ServicesGrid() {
           <div>
             <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary">╱ Everything Included</span>
             <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl mt-4 leading-[1.05] tracking-tight">
-              First call,
-              <span className="block font-serif italic font-medium text-primary">to patient in the chair.</span>
+              Idle machine,
+              <span className="block font-serif italic font-medium text-primary">to purchase order.</span>
             </h2>
           </div>
           <p className="text-white/60 max-w-md text-base leading-relaxed">
-            Everything between “Hello, is the doctor available?” and the patient walking in — handled in the
-            background.
+            Everything between “we have spare capacity” and a signed PO — the research and paperwork done for
+            you, the relationships kept by you.
           </p>
         </div>
 
@@ -1143,18 +1103,18 @@ function TrustSignals() {
   const badges = [
     {
       Icon: ShieldCheck,
-      title: 'Only people who contacted you',
-      text: 'No scraped lists, no cold calls. Aiventre only talks to people who called or messaged your clinic, and to your own patients for reminders.',
+      title: 'You approve every email',
+      text: 'Aiventre never sends anything on its own. Every email is a draft until you read it and send it from your own address.',
     },
     {
-      Icon: Hand,
-      title: 'Knows when to hand over',
-      text: 'It never gives medical advice. Medical questions, emergencies and complaints go straight to your staff with the full conversation attached.',
+      Icon: Search,
+      title: 'Real companies, real sources',
+      text: 'Every buyer comes with the link where it was found. Only published business contacts — no bought lists, no guessed emails.',
     },
     {
-      Icon: Users,
-      title: 'You see everything',
-      text: 'Every call, chat and booking is in your dashboard with a transcript — plus a WhatsApp summary every morning.',
+      Icon: PhoneOff,
+      title: 'No robot calls',
+      text: 'Manufacturing runs on trust. The AI prepares you; you make the calls. Buyers talk to the owner, not a machine.',
     },
   ]
 
@@ -1162,8 +1122,8 @@ function TrustSignals() {
     <section ref={ref} className="relative py-14 sm:py-20 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
-          <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Built For Patient Trust</span>
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-ink mt-3 tracking-tight">A receptionist, not a robocaller.</h2>
+          <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Built For Trust</span>
+          <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-ink mt-3 tracking-tight">An assistant, not a spam machine.</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -1183,14 +1143,14 @@ function TrustSignals() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/demo" className="magnetic-btn inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full shadow-xl shadow-primary/30">
-            <Play className="h-4 w-4" />
-            Try the live demo
-          </Link>
-          <a href="#contact" className="lift-on-hover inline-flex items-center justify-center gap-2 border border-divider bg-white text-ink font-semibold px-7 py-3.5 rounded-full">
-            Get early access
+          <a href="#contact" className="magnetic-btn inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full shadow-xl shadow-primary/30">
+            Join the pilot
             <ArrowRight className="h-4 w-4" />
           </a>
+          <Link to="/app" className="lift-on-hover inline-flex items-center justify-center gap-2 border border-divider bg-white text-ink font-semibold px-7 py-3.5 rounded-full">
+            Open the app
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>
@@ -1200,11 +1160,11 @@ function TrustSignals() {
 /* ----------------------------------------------------------------
    Contact Form
 ---------------------------------------------------------------- */
-const EMPTY_FORM = { name: '', clinic: '', phone: '', city: '', email: '', message: '' }
+const EMPTY_FORM = { name: '', shop: '', phone: '', city: '', email: '', message: '' }
 
 const FORM_LABELS = {
   name: 'Name',
-  clinic: 'Clinic',
+  shop: 'Shop',
   phone: 'Phone / WhatsApp',
   city: 'City',
   email: 'Email',
@@ -1216,7 +1176,7 @@ const mailtoHref = (form) => {
     .filter(([, v]) => v)
     .map(([k, v]) => `${FORM_LABELS[k]}: ${v}`)
     .join('\n')
-  const subject = `Early access — ${form.clinic || form.name}`
+  const subject = `Pilot — ${form.shop || form.name}`
   return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
@@ -1242,7 +1202,7 @@ function ContactForm() {
       const res = await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ ...form, _subject: `Early access — ${form.clinic || form.name}` }),
+        body: JSON.stringify({ ...form, _subject: `Pilot — ${form.shop || form.name}` }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setStatus('sent')
@@ -1259,14 +1219,14 @@ function ContactForm() {
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
           <div className="lg:col-span-5">
-            <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Early Access</span>
+            <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Pilot</span>
             <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink mt-4 leading-[1.05] tracking-tight">
-              Stop losing patients
-              <span className="block font-serif italic font-medium text-primary-dark">to missed calls.</span>
+              Machines idle
+              <span className="block font-serif italic font-medium text-primary-dark">this week?</span>
             </h2>
             <p className="text-muted text-lg mt-6 leading-relaxed max-w-md">
-              We’re setting up our first clinics now, and doing the setup with each one personally. Tell us about
-              yours and we’ll call you to walk through it.
+              We’re running a pilot with a few CNC/VMC job shops and setting each one up personally. Tell us about
+              your shop and we’ll call you.
             </p>
 
             <div className="mt-10 space-y-4">
@@ -1275,7 +1235,7 @@ function ContactForm() {
               )}
               {WHATSAPP_NUMBER && (
                 <ContactLink
-                  href={whatsappHref('Hi, I’d like to know more about Aiventre for my clinic.')}
+                  href={whatsappHref('Hi, I’d like to join the Aiventre pilot for my shop.')}
                   Icon={MessageCircle}
                   label="Chat on WhatsApp"
                   value="Message us"
@@ -1308,7 +1268,7 @@ function ContactForm() {
                 <>
                   <div className="grid sm:grid-cols-2 gap-5">
                     <Field label="Your name" required value={form.name} onChange={set('name')} autoComplete="name" />
-                    <Field label="Clinic name" value={form.clinic} onChange={set('clinic')} autoComplete="organization" />
+                    <Field label="Shop name" value={form.shop} onChange={set('shop')} autoComplete="organization" />
                     <Field label="Phone / WhatsApp" type="tel" required value={form.phone} onChange={set('phone')} autoComplete="tel" />
                     <Field label="City" value={form.city} onChange={set('city')} autoComplete="address-level2" />
                   </div>
@@ -1318,14 +1278,14 @@ function ContactForm() {
 
                   <div className="mt-5">
                     <label htmlFor="field-message" className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted mb-2 block">
-                      Anything we should know?
+                      Your machines
                     </label>
                     <textarea
                       id="field-message"
                       value={form.message}
                       onChange={(e) => set('message')(e.target.value)}
                       rows={4}
-                      placeholder="Roughly how many calls a day? How do you book appointments today?"
+                      placeholder="e.g. 2 VMC 850, 1 CNC lathe. Tractor and auto parts. Idle 2–3 days a week."
                       className="w-full bg-background border border-divider rounded-2xl px-4 py-3.5 text-ink placeholder-muted/60 focus:border-primary focus:ring-4 focus:ring-primary/15 outline-none transition resize-none font-body"
                     />
                   </div>
@@ -1347,7 +1307,7 @@ function ContactForm() {
                       disabled={status === 'sending'}
                       className="magnetic-btn inline-flex items-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full shadow-lg shadow-primary/30 disabled:opacity-50"
                     >
-                      {status === 'sending' ? 'Sending…' : 'Request early access'}
+                      {status === 'sending' ? 'Sending…' : 'Join the pilot'}
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -1360,7 +1320,7 @@ function ContactForm() {
                   {status === 'sent' ? (
                     <>
                       <h3 className="font-display font-bold text-2xl text-ink mb-3">Thanks — we’ll be in touch</h3>
-                      <p className="text-muted max-w-md mx-auto">We’ll call you within one business day to talk through your clinic.</p>
+                      <p className="text-muted max-w-md mx-auto">We’ll call you within one business day to talk through your shop.</p>
                     </>
                   ) : (
                     <>
@@ -1434,13 +1394,13 @@ function Footer() {
       <div className="relative px-6 sm:px-10 lg:px-16 pt-20 pb-10 max-w-7xl mx-auto">
         <div className="border-b border-white/10 pb-12 mb-12">
           <h2 className="font-display font-extrabold text-5xl sm:text-7xl md:text-8xl leading-[0.92] tracking-tight">
-            Never miss
-            <span className="font-serif italic font-medium text-primary block">another patient.</span>
+            Idle machines?
+            <span className="font-serif italic font-medium text-primary block">Let’s fill them.</span>
           </h2>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-8 gap-6">
-            <p className="text-white/50 max-w-md">Aiventre — the AI front desk for Indian clinics.</p>
+            <p className="text-white/50 max-w-md">Aiventre — the AI sales assistant for manufacturing job shops.</p>
             <a href="#contact" className="magnetic-btn inline-flex items-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full self-start sm:self-auto">
-              Get early access
+              Join the pilot
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -1455,10 +1415,10 @@ function Footer() {
               <span className="font-display font-bold text-lg">Aiventre</span>
             </div>
             <p className="text-white/50 text-sm leading-relaxed max-w-xs">
-              Answers every call and WhatsApp, books the appointment, and sends the reminders — so your front desk
-              doesn’t have to.
+              Finds buyers, drafts the emails, sorts the replies and helps you quote — so you can spend your time
+              on the shop floor.
             </p>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-white/30 mt-6">Made for Indian clinics</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-white/30 mt-6">Made for Indian job shops</p>
           </div>
 
           <div>
@@ -1477,7 +1437,7 @@ function Footer() {
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary mb-4">Company</p>
             <ul className="space-y-2.5">
-              <li><Link to="/demo" className="text-white/65 hover:text-primary transition text-sm">Live demo</Link></li>
+              <li><Link to="/app" className="text-white/65 hover:text-primary transition text-sm">Open the app</Link></li>
               <li><a href="#how-it-works" className="text-white/65 hover:text-primary transition text-sm">How it Works</a></li>
               <li><a href="#contact" className="text-white/65 hover:text-primary transition text-sm">Contact</a></li>
             </ul>
@@ -1501,7 +1461,7 @@ function Footer() {
 
         <div className="mt-14 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60">
-            Early access · Onboarding our first clinics
+            Pilot · Onboarding our first shops
           </span>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/50 text-xs font-mono">
@@ -1530,7 +1490,7 @@ export default function App() {
     }
   }, [])
 
-  // Arriving from another route (e.g. /demo → /#contact): scroll to the section.
+  // Arriving from another route (e.g. /app → /#contact): scroll to the section.
   useEffect(() => {
     if (!hash) return
     // Instant, not smooth: a smooth scroll gets cut short by ScrollTrigger's refresh.
