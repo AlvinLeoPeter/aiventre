@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
@@ -10,18 +10,28 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldCheck,
-  Zap,
-  Users,
   Search,
-  PhoneCall,
+  Send,
+  Inbox,
+  Calculator,
+  FileText,
+  BellRing,
   MessageCircle,
-  CalendarCheck,
-  LayoutDashboard,
   Bot,
   Menu,
   X,
-  Upload,
+  PhoneOff,
+  Building2,
 } from 'lucide-react'
+import {
+  CONTACT_EMAIL,
+  CONTACT_PHONE,
+  FORM_ENDPOINT,
+  WHATSAPP_NUMBER,
+  prefersReducedMotion,
+  telHref,
+  whatsappHref,
+} from './config.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -30,44 +40,45 @@ gsap.registerPlugin(ScrollTrigger)
 ---------------------------------------------------------------- */
 const NAV_LINKS = [
   { label: 'Home', href: '#home' },
-  { label: 'Solutions', href: '#solutions' },
-  { label: 'Why Aiventre', href: '#why-aiventre' },
+  { label: 'What it does', href: '#solutions' },
   { label: 'How it Works', href: '#how-it-works' },
   { label: 'Contact', href: '#contact' },
 ]
 
 const SERVICES_FULL = [
   {
+    icon: FileText,
+    title: 'Capability Profile',
+    text: 'Describe your shop in your own words. Aiventre turns it into a clean one-page profile — machines, materials, tolerances, industries — ready to send to any purchase team.',
+  },
+  {
     icon: Search,
-    title: 'Lead Discovery',
-    text: 'Aiventre scans directories, listings and social platforms around the clock to surface leads that actually match your business and location.',
+    title: 'AI Buyer Research',
+    text: 'The AI agent searches the web for companies that buy parts like yours — OEMs, Tier-1/2 suppliers, GeM tenders — and saves each one with the source, so you can check it.',
   },
   {
-    icon: Mail,
-    title: 'Email Outreach & Follow-up',
-    text: 'Personalized emails go out automatically, with smart follow-ups that keep nudging until a lead responds — so nothing falls through the cracks.',
+    icon: Send,
+    title: 'Emails You Approve',
+    text: 'Short, specific emails written for each buyer. Nothing goes out until you read it and send it from your own email.',
   },
   {
-    icon: PhoneCall,
-    title: 'AI Phone Calls',
-    text: "A natural-sounding AI voice calls leads, answers questions, and qualifies interest — handling the calls you don't have time to make.",
+    icon: BellRing,
+    title: 'Follow-up Reminders',
+    text: 'Most orders come after the second or third message. Aiventre reminds you who to follow up with, and drafts the follow-up.',
   },
   {
-    icon: MessageCircle,
-    title: 'WhatsApp & SMS Outreach',
-    text: 'Reach customers where Indian businesses actually get replies — automated WhatsApp and SMS messages, sent at the right moment.',
+    icon: Inbox,
+    title: 'Reply Sorting',
+    text: 'Paste a buyer’s reply and see what it means — quote request, call me, not now — with the next step and a suggested response.',
   },
   {
-    icon: CalendarCheck,
-    title: 'Appointment Booking',
-    text: 'Meetings get booked, rescheduled and reminded automatically — synced straight to your calendar, with zero manual back-and-forth.',
-  },
-  {
-    icon: LayoutDashboard,
-    title: 'Unified Sales Dashboard',
-    text: 'Every lead, call, email and booking lives in one dashboard — so you always know exactly where each deal stands.',
+    icon: Calculator,
+    title: 'Quote Helper',
+    text: 'Upload a drawing. The AI reads material, features and tolerances and estimates machining time. You set the rate and decide the price.',
   },
 ]
+
+const useReducedMotion = () => useState(prefersReducedMotion)[0]
 
 /* ----------------------------------------------------------------
    Navbar
@@ -116,13 +127,21 @@ function Navbar() {
                 {link.label}
               </a>
             ))}
+            <Link
+              to="/app"
+              className={`text-sm font-medium tracking-tight lift-on-hover ${
+                scrolled ? 'text-ink/70 hover:text-primary' : 'text-white/90 hover:text-white'
+              } transition-colors`}
+            >
+              Open the app
+            </Link>
           </div>
 
           <a
             href="#contact"
             className="hidden lg:inline-flex magnetic-btn items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg shadow-primary/30"
           >
-            Book a Demo
+            Join the pilot
             <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
           </a>
 
@@ -150,7 +169,7 @@ function Navbar() {
         >
           <div className="flex items-center justify-between mb-10">
             <span className="font-display font-bold text-xl text-ink">Aiventre</span>
-            <button onClick={() => setOpen(false)} className="p-2 rounded-full bg-divider/40">
+            <button onClick={() => setOpen(false)} className="p-2 rounded-full bg-divider/40" aria-label="Close menu">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -165,13 +184,16 @@ function Navbar() {
                 {link.label}
               </a>
             ))}
+            <Link to="/app" className="font-display text-3xl font-semibold text-ink py-3 border-b border-divider">
+              Open the app
+            </Link>
           </div>
           <a
             href="#contact"
             onClick={() => setOpen(false)}
             className="mt-8 magnetic-btn flex items-center justify-center gap-2 bg-primary text-white px-6 py-4 rounded-full font-semibold w-full"
           >
-            Book a Demo
+            Join the pilot
             <ArrowUpRight className="h-4 w-4" />
           </a>
         </div>
@@ -183,10 +205,18 @@ function Navbar() {
 /* ----------------------------------------------------------------
    Hero
 ---------------------------------------------------------------- */
+const HERO_FEED = [
+  { Icon: Search, from: '12 tractor-parts makers near Pune', to: 'Saved with sources' },
+  { Icon: Send, from: 'Email to purchase@… drafted', to: 'Waiting for your OK' },
+  { Icon: Inbox, from: 'Reply: “Please quote 500 pcs”', to: 'Quote ready' },
+]
+
 function Hero() {
   const heroRef = useRef(null)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
+    if (reduced) return
     const ctx = gsap.context(() => {
       gsap.from('.hero-line-1', { y: 40, opacity: 0, duration: 1, ease: 'power3.out', delay: 0.3 })
       gsap.from('.hero-line-2', { y: 60, opacity: 0, duration: 1.2, ease: 'power3.out', delay: 0.5 })
@@ -200,51 +230,36 @@ function Hero() {
       })
     }, heroRef)
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
 
   return (
-    <section id="home" ref={heroRef} className="relative min-h-[100dvh] w-full overflow-hidden">
-      {/* Background image */}
-      <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2400&q=80"
-          alt="Abstract AI data circuitry"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-tr from-deep/85 via-deep/55 to-primary/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-deep via-deep/40 to-transparent" />
-      </div>
-
-      {/* Decorative floating signal particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 right-[18%] h-2 w-2 rounded-full bg-primary/60 animate-float" style={{ animationDelay: '0s' }} />
-        <div className="absolute top-[55%] right-[10%] h-1.5 w-1.5 rounded-full bg-accent/60 animate-float" style={{ animationDelay: '1.5s' }} />
-        <div className="absolute top-[40%] right-[26%] h-1 w-1 rounded-full bg-primary-light/70 animate-float" style={{ animationDelay: '3s' }} />
-      </div>
-
-      {/* Top frame */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    <section id="home" ref={heroRef} className="relative min-h-[100dvh] w-full overflow-hidden bg-deep">
+      {/* Background */}
+      <div className="absolute inset-0 grid-bg opacity-25" />
+      <div className="absolute -top-40 -left-32 h-[36rem] w-[36rem] rounded-full bg-primary/35 blur-3xl" />
+      <div className="absolute bottom-0 -right-20 h-96 w-96 rounded-full bg-accent/15 blur-3xl" />
+      <div className="absolute inset-0 bg-gradient-to-t from-deep via-transparent to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center text-center">
+      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center text-center pt-28 pb-16">
         <div className="px-6 sm:px-10 lg:px-16 max-w-4xl">
           <p className="hero-meta font-mono text-xs uppercase tracking-[0.25em] text-white/60 mb-6">
-            ╱ The AI Sales OS for Indian Small Businesses
+            ╱ Orders for CNC &amp; VMC job shops
           </p>
           <h1 className="font-display font-extrabold text-white leading-[0.95] tracking-tight">
-            <span className="hero-line-1 block text-4xl sm:text-5xl md:text-6xl">Your sales team,</span>
+            <span className="hero-line-1 block text-4xl sm:text-5xl md:text-6xl">Idle machines?</span>
             <span
               className="hero-line-2 block font-serif italic font-medium text-primary-light text-6xl sm:text-7xl md:text-8xl lg:text-9xl mt-2"
               style={{ lineHeight: '0.92' }}
             >
-              powered by AI.
+              Let’s fill them.
             </span>
           </h1>
 
           <p className="hero-meta mx-auto max-w-xl text-white/75 text-base sm:text-lg mt-8 leading-relaxed">
-            Aiventre finds your leads, emails and calls them automatically, books the meeting — and shows it all in
-            one dashboard.
-            <span className="text-white"> Built for businesses that don't have time to chase leads.</span>
+            Aiventre’s AI agent finds companies that buy machined parts, writes the emails for you to approve,
+            sorts the replies and helps you quote from a drawing.
+            <span className="text-white"> You make the calls. You win the orders.</span>
           </p>
 
           <div className="hero-cta mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -252,23 +267,35 @@ function Hero() {
               href="#contact"
               className="magnetic-btn group inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-7 py-4 rounded-full shadow-2xl shadow-primary/40"
             >
-              Book a Demo
+              Join the pilot
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
-            <a
-              href="tel:+919876543210"
+            <Link
+              to="/app"
               className="lift-on-hover inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white border border-white/20 font-medium px-7 py-4 rounded-full"
             >
-              <Phone className="h-4 w-4" />
-              +91 98765 43210
-            </a>
+              Open the app
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
           </div>
-        </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 right-6 sm:right-12 hidden md:flex flex-col items-center gap-2 text-white/50">
-          <span className="font-mono uppercase text-[10px] tracking-[0.3em]">Scroll</span>
-          <div className="h-8 w-px bg-gradient-to-b from-white/50 to-transparent" />
+          <ul className="hero-cta mx-auto mt-12 max-w-lg space-y-2 text-left">
+            {HERO_FEED.map(({ Icon, from, to }) => (
+              <li
+                key={from}
+                className="glass-dark flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/25">
+                  <Icon className="h-4 w-4 text-primary-light" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5 font-mono text-[11px] sm:flex-row sm:items-center sm:gap-3 sm:text-xs">
+                  <span className="min-w-0 flex-1 truncate text-white/60">{from}</span>
+                  <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-white/30 sm:block" />
+                  <span className="shrink-0 text-accent">{to}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
@@ -276,13 +303,13 @@ function Hero() {
 }
 
 /* ----------------------------------------------------------------
-   Feature Card 1 — Lead Discovery Shuffler
+   Feature Card 1 — Buyer Shuffler
 ---------------------------------------------------------------- */
-function LeadShuffler() {
+function BuyerShuffler() {
   const items = [
-    { tag: 'Retail', label: 'New boutique store opened in Bangalore', source: 'Google Maps' },
-    { tag: 'Healthcare', label: 'Dental clinic expanding to a second location', source: 'JustDial' },
-    { tag: 'Food & Bev', label: 'Restaurant chain hiring for 3 new outlets', source: 'LinkedIn' },
+    { tag: 'Tractor parts', label: 'Transmission housing maker, outsources VMC work', source: 'Pune' },
+    { tag: 'Pumps', label: 'Pump OEM buying machined impeller housings', source: 'Kolhapur' },
+    { tag: 'GeM tender', label: 'Railway workshop: 2,000 machined brackets', source: 'Tender' },
   ]
   const [stack, setStack] = useState(items)
 
@@ -320,14 +347,8 @@ function LeadShuffler() {
               <span className="font-mono text-xs text-muted">{item.source}</span>
             </div>
             <div className="mt-4 font-display text-lg font-semibold text-ink leading-tight">{item.label}</div>
-            <div className="mt-3 flex items-center gap-1.5">
-              {Array.from({ length: 24 }).map((_, idx) => (
-                <span
-                  key={idx}
-                  className="h-1 w-1 rounded-full"
-                  style={{ background: idx < 24 - offset * 6 ? '#8657FF' : '#E5E1F2' }}
-                />
-              ))}
+            <div className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-emerald-700">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Saved with source link
             </div>
           </div>
         )
@@ -337,24 +358,24 @@ function LeadShuffler() {
 }
 
 /* ----------------------------------------------------------------
-   Feature Card 2 — Signal Pulse (signature animation: AI calls + follow-up)
+   Feature Card 2 — Signal Pulse (AI call engine)
 ---------------------------------------------------------------- */
+const CALL_STATUSES = [
+  { text: 'Researching buyers near you', label: 'Searching', tone: 'emerald' },
+  { text: 'Email drafted · waiting for your OK', label: 'Draft', tone: 'accent' },
+  { text: 'Sent by you · follow-up in 4 days', label: 'Sent', tone: 'primary' },
+  { text: 'Reply: “please quote 500 pcs”', label: 'Quote', tone: 'emerald' },
+]
+
 function SignalPulse() {
   const [statusIdx, setStatusIdx] = useState(0)
-  const [count, setCount] = useState(7)
-
-  const statuses = [
-    { text: 'Monitoring for new leads', label: 'Idle', tone: 'emerald' },
-    { text: 'New lead detected · zone 4', label: 'Live', tone: 'accent' },
-    { text: 'AI calling +91 98•••210', label: 'On call', tone: 'primary' },
-    { text: 'Meeting booked · synced', label: 'Booked', tone: 'emerald' },
-  ]
+  const [count, setCount] = useState(3)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setStatusIdx((idx) => {
-        const next = (idx + 1) % statuses.length
-        if (statuses[next].label === 'Booked') {
+        const next = (idx + 1) % CALL_STATUSES.length
+        if (CALL_STATUSES[next].label === 'Quote') {
           setCount((c) => c + 1)
         }
         return next
@@ -379,7 +400,7 @@ function SignalPulse() {
     { left: '76%', delay: '1.8s' },
   ]
 
-  const status = statuses[statusIdx]
+  const status = CALL_STATUSES[statusIdx]
   const toneText =
     status.tone === 'emerald' ? 'text-emerald-600' : status.tone === 'accent' ? 'text-accent-dark' : 'text-primary-dark'
   const toneDot = status.tone === 'emerald' ? 'bg-emerald-500' : status.tone === 'accent' ? 'bg-accent' : 'bg-primary'
@@ -399,11 +420,11 @@ function SignalPulse() {
           <svg className="h-3.5 w-3.5 text-primary-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 12h4l2-7 4 14 2-7h4" />
           </svg>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary-dark">AI Call Engine</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary-dark">Outreach engine</span>
         </div>
         <div className="flex items-baseline gap-1">
           <span className="font-display font-bold text-sm text-ink tabular-nums">{String(count).padStart(2, '0')}</span>
-          <span className="font-mono text-[9px] uppercase tracking-widest text-muted">today</span>
+          <span className="font-mono text-[9px] uppercase tracking-widest text-muted">quote requests</span>
         </div>
       </div>
 
@@ -509,78 +530,45 @@ function SignalPulse() {
 }
 
 /* ----------------------------------------------------------------
-   Feature Card 3 — Cursor Scheduler (Appointment Booking)
+   Feature Card 3 — Quote Widget
 ---------------------------------------------------------------- */
-function BookingScheduler() {
-  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const QUOTE_STEPS = [
+  { label: 'Reading drawing…', value: '' },
+  { label: 'Material', value: 'EN8 · Ø40 bar' },
+  { label: 'Machining time', value: '10.5 min / part' },
+  { label: 'Your price', value: '₹221 / part' },
+]
+
+function QuoteWidget() {
   const [step, setStep] = useState(0)
-  const activeDay = 2
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStep((prev) => (prev + 1) % 5)
-    }, 1400)
+    const interval = setInterval(() => setStep((s) => (s + 1) % (QUOTE_STEPS.length + 1)), 1300)
     return () => clearInterval(interval)
   }, [])
 
-  const cursorPos = (() => {
-    switch (step) {
-      case 0:
-        return { x: 8, y: 110, opacity: 0 }
-      case 1:
-        return { x: 60, y: 60, opacity: 1 }
-      case 2:
-        return { x: 60 + activeDay * 36, y: 60, opacity: 1 }
-      case 3:
-        return { x: 60 + activeDay * 36, y: 60, opacity: 1 }
-      case 4:
-        return { x: 130, y: 130, opacity: 1 }
-      default:
-        return { x: 8, y: 110, opacity: 0 }
-    }
-  })()
-
   return (
-    <div className="relative h-44 w-full bg-white border border-divider rounded-3xl p-5 overflow-hidden">
+    <div className="relative h-44 w-full bg-white border border-divider rounded-3xl p-5 overflow-hidden" aria-hidden="true">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Week 27 · July</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted">bracket_rev2.pdf</span>
         <span className="font-mono text-[10px] uppercase tracking-widest text-primary-dark bg-primary/10 px-2 py-0.5 rounded-full">
-          Booking
+          Quote
         </span>
       </div>
-
-      <div className="grid grid-cols-7 gap-2 mb-4">
-        {days.map((d, idx) => (
-          <div
-            key={idx}
-            className={`flex flex-col items-center justify-center h-9 rounded-xl text-xs font-medium transition-all duration-300 ${
-              step >= 3 && idx === activeDay
-                ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/30'
-                : 'bg-background text-ink'
-            }`}
+      <ul className="space-y-1.5">
+        {QUOTE_STEPS.slice(1).map((s, i) => (
+          <li
+            key={s.label}
+            className={`flex items-center justify-between rounded-xl px-3 py-1.5 text-xs transition-all duration-500 ${
+              step > i + 1 ? 'bg-background opacity-100' : 'opacity-30'
+            } ${i === 2 && step > 3 ? '!bg-accent/15' : ''}`}
           >
-            <span className="font-mono text-[9px] text-muted">{d}</span>
-            <span className="font-display font-semibold text-sm">{idx + 7}</span>
-          </div>
+            <span className="text-muted">{s.label}</span>
+            <span className={`font-mono font-semibold ${i === 2 ? 'text-accent-dark' : 'text-ink'}`}>{step > i + 1 ? s.value : '—'}</span>
+          </li>
         ))}
-      </div>
-
-      <button
-        className={`w-full py-2.5 rounded-2xl font-medium text-xs transition-all duration-300 ${
-          step === 4 ? 'bg-accent text-white scale-[1.02] shadow-md shadow-accent/30' : 'bg-divider/40 text-muted'
-        }`}
-      >
-        {step >= 3 ? '✓ Meeting confirmed' : 'Pick a day'}
-      </button>
-
-      <div
-        className="absolute pointer-events-none transition-all duration-500 ease-out"
-        style={{ left: `${cursorPos.x}px`, top: `${cursorPos.y}px`, opacity: cursorPos.opacity, transform: step === 3 ? 'scale(0.85)' : 'scale(1)' }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M5 3L19 12L12 13L9 20L5 3Z" fill="#15121F" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
-        </svg>
-      </div>
+      </ul>
+      <p className="mt-2 font-mono text-[10px] text-muted">{step <= 1 ? QUOTE_STEPS[0].label : 'You decide the final price'}</p>
     </div>
   )
 }
@@ -590,8 +578,10 @@ function BookingScheduler() {
 ---------------------------------------------------------------- */
 function Features() {
   const sectionRef = useRef(null)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
+    if (reduced) return
     const ctx = gsap.context(() => {
       gsap.from('.feature-card', {
         scrollTrigger: { trigger: sectionRef.current, start: 'top 90%', once: true },
@@ -611,29 +601,29 @@ function Features() {
       })
     }, sectionRef)
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
 
   const cards = [
     {
-      eyebrow: '01 / Discovery',
-      heading: 'Lead Discovery',
-      sub: 'Found automatically',
-      text: 'Aiventre continuously scans directories, listings and social platforms for businesses that match your ideal customer — so your pipeline never runs dry.',
-      Component: LeadShuffler,
+      eyebrow: '01 / Find',
+      heading: 'Buyers who need your machines',
+      sub: 'Researched by AI, with sources',
+      text: 'Tell the agent “I have idle VMC time — find me work.” It searches for companies that outsource parts like yours and saves them with where it found them.',
+      Component: BuyerShuffler,
     },
     {
-      eyebrow: '02 / Outreach',
-      heading: 'Calls & Follow-ups',
-      sub: 'Never miss a lead',
-      text: 'The moment a lead is found, Aiventre emails and calls them automatically — following up until they respond, day or night.',
+      eyebrow: '02 / Reach out',
+      heading: 'Emails you approve',
+      sub: 'Written for each buyer',
+      text: 'Short, specific emails that mention what the buyer makes and what your machines can do. You read, edit and send — from your own email.',
       Component: SignalPulse,
     },
     {
-      eyebrow: '03 / Booking',
-      heading: 'Appointment Booking',
-      sub: 'Synced to your calendar',
-      text: 'Once a lead is ready, Aiventre books the meeting directly on your calendar — no back-and-forth, no double-booking.',
-      Component: BookingScheduler,
+      eyebrow: '03 / Quote',
+      heading: 'Quotes in minutes',
+      sub: 'From the drawing',
+      text: 'Upload the buyer’s drawing. The AI estimates machining time; your hour rate and margin turn it into a price. You always decide.',
+      Component: QuoteWidget,
     },
   ]
 
@@ -643,8 +633,8 @@ function Features() {
         <div className="feature-heading max-w-3xl mb-16 sm:mb-24">
           <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ What Aiventre Does</span>
           <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink mt-4 leading-[1.05] tracking-tight">
-            Three moves.
-            <span className="block font-serif italic font-medium text-primary-dark mt-1">One system.</span>
+            Find. Pitch. Quote.
+            <span className="block font-serif italic font-medium text-primary-dark mt-1">While your machines run.</span>
           </h2>
         </div>
 
@@ -681,13 +671,13 @@ function Features() {
    CountUp
 ---------------------------------------------------------------- */
 function CountUp({ target, duration = 1800 }) {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(() => (prefersReducedMotion() ? target : 0))
   const elemRef = useRef(null)
   const startedRef = useRef(false)
 
   useEffect(() => {
     const el = elemRef.current
-    if (!el) return
+    if (!el || prefersReducedMotion()) return
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -719,7 +709,7 @@ function CountUp({ target, duration = 1800 }) {
 }
 
 /* ----------------------------------------------------------------
-   Pillars
+   Pillars — the promises the product is built around
 ---------------------------------------------------------------- */
 function Pillars() {
   const ref = useRef(null)
@@ -745,26 +735,26 @@ function Pillars() {
     {
       n: '01',
       title: 'Reach',
-      target: 500,
+      target: 100,
       suffix: '+',
-      label: 'leads found monthly',
-      desc: 'Aiventre continuously scans directories, listings and social platforms to surface leads that match your business — every single day.',
+      label: 'buyers researched a month',
+      desc: 'Real companies that buy parts like yours, each saved with the page it came from — not a bought list.',
     },
     {
       n: '02',
-      title: 'Always On',
-      target: 24,
-      suffix: '/7',
-      label: 'AI availability',
-      desc: 'Your AI sales team never sleeps. Calls get answered, emails get sent, and follow-ups happen around the clock.',
+      title: 'Control',
+      target: 0,
+      suffix: '',
+      label: 'emails sent without your OK',
+      desc: 'The AI drafts. You read, change and send from your own email. Your name, your reputation, your decision.',
     },
     {
       n: '03',
       title: 'Speed',
-      target: 90,
-      suffix: '%',
-      label: 'faster response time',
-      desc: 'Most small businesses reply to a lead in hours. Aiventre replies in minutes — before your competitor even sees the message.',
+      target: 24,
+      suffix: 'h',
+      label: 'to send a quote',
+      desc: 'Buyers often go with the first sensible quote. The quote helper gets you from drawing to price the same day.',
     },
   ]
 
@@ -781,14 +771,14 @@ function Pillars() {
           }`}
         >
           <div className="max-w-2xl">
-            <span className="inline-block font-mono text-xs uppercase tracking-[0.3em] text-primary-dark mb-5">╱ Why It Works</span>
+            <span className="inline-block font-mono text-xs uppercase tracking-[0.3em] text-primary-dark mb-5">╱ Built Around</span>
             <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink leading-[1.05] tracking-tight">
-              The numbers
-              <span className="block font-serif italic font-medium text-primary-dark">behind Aiventre.</span>
+              Three promises
+              <span className="block font-serif italic font-medium text-primary-dark">to every shop.</span>
             </h2>
           </div>
           <p className="text-muted text-lg leading-relaxed max-w-md lg:text-right">
-            Three numbers that define how Aiventre works for you. Not marketing — just what gets delivered, every day.
+            The bar we build Aiventre to — and what we’ll measure together in your first month.
           </p>
         </div>
 
@@ -847,12 +837,79 @@ function Pillars() {
 }
 
 /* ----------------------------------------------------------------
+   Protocol visuals — small product mockups instead of stock photos
+---------------------------------------------------------------- */
+function MockRow({ label, value, on = true }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/10 px-4 py-3">
+      <span className="text-sm text-white/80">{label}</span>
+      <span className={`font-mono text-[11px] ${on ? 'text-accent' : 'text-white/40'}`}>{value}</span>
+    </div>
+  )
+}
+
+function ProfileMock() {
+  return (
+    <div className="w-full max-w-xs space-y-2.5">
+      <p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-white/50">
+        <FileText className="h-3.5 w-3.5" /> Capability profile
+      </p>
+      <MockRow label="VMC 850" value="× 2" />
+      <MockRow label="CNC lathe" value="× 1" />
+      <MockRow label="Materials" value="MS · EN8 · Al" />
+      <MockRow label="Tolerance" value="±0.02 mm" />
+      <MockRow label="Industries" value="Tractor · Auto" />
+    </div>
+  )
+}
+
+function BuyerMock() {
+  const rows = [
+    ['Tractor transmission maker', 'Pune'],
+    ['Pump & valve OEM', 'Kolhapur'],
+    ['Agri-equipment Tier-1', 'Nashik'],
+  ]
+  return (
+    <div className="w-full max-w-xs space-y-2">
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-white/50">Saved by the agent</p>
+      {rows.map(([name, city]) => (
+        <div key={name} className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-2.5 text-ink">
+          <Building2 className="h-4 w-4 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{name}</span>
+          <span className="font-mono text-[10px] text-muted">{city}</span>
+        </div>
+      ))}
+      <p className="mx-auto w-fit rounded-full bg-accent/15 px-3 py-1 font-mono text-[10px] text-accent">3 emails drafted · review</p>
+    </div>
+  )
+}
+
+function ReplyMock() {
+  return (
+    <div className="w-full max-w-xs space-y-2.5">
+      <p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-white/50">
+        <Inbox className="h-3.5 w-3.5" /> Reply sorted
+      </p>
+      <p className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-[13px] leading-snug text-ink">
+        “Please share your best price for 500 pcs as per attached drawing.”
+      </p>
+      <p className="mx-auto w-fit rounded-full bg-accent/15 px-3 py-1 font-mono text-[10px] text-accent">Wants a quote</p>
+      <p className="rounded-2xl bg-white/10 px-3.5 py-2.5 text-[13px] leading-snug text-white/80">
+        Next: run the drawing through the quote helper and reply today.
+      </p>
+    </div>
+  )
+}
+
+/* ----------------------------------------------------------------
    Protocol — Sticky Stacking Cards
 ---------------------------------------------------------------- */
 function Protocol() {
   const containerRef = useRef(null)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
+    if (reduced) return
     const ctx = gsap.context(() => {
       const cards = gsap.utils.toArray('.protocol-card')
       cards.forEach((card, i) => {
@@ -873,35 +930,32 @@ function Protocol() {
       })
     }, containerRef)
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
 
   const steps = [
     {
       num: '01',
-      title: 'Connect Your Business',
-      tagline: 'We learn you first.',
-      text: 'Tell us your industry, service area and what a good customer looks like. Aiventre configures itself around your business — no complex setup required.',
-      image: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80',
-      alt: 'Team setting up a business workflow on a laptop',
-      meta: 'Step 1 / Connect',
+      title: 'Tell us about your shop',
+      tagline: 'In your own words.',
+      text: 'Type or paste what you have — machines, materials, what you’ve made before. Aiventre builds your capability profile. We set it up with you on the first call.',
+      Visual: ProfileMock,
+      meta: 'Step 1 / Profile',
     },
     {
       num: '02',
-      title: 'AI Finds & Reaches Out',
-      tagline: 'We do the outreach.',
-      text: 'Aiventre finds leads matching your business, sends personalized emails, and calls prospects directly — following up automatically until they respond.',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80',
-      alt: 'Abstract data network visualization',
-      meta: 'Step 2 / Reach',
+      title: 'The agent finds buyers',
+      tagline: 'And drafts the emails.',
+      text: 'It researches companies that buy parts like yours, saves each one with its source, and writes a short email for each. You check, edit and send.',
+      Visual: BuyerMock,
+      meta: 'Step 2 / Find',
     },
     {
       num: '03',
-      title: 'You Get the Meeting',
-      tagline: 'We hand you the deal.',
-      text: 'Every booked appointment lands straight in your dashboard and calendar. You show up, close the deal — we handle everything before that.',
-      image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80',
-      alt: 'Two professionals shaking hands after a meeting',
-      meta: 'Step 3 / Close',
+      title: 'You call, quote and win',
+      tagline: 'The relationship stays yours.',
+      text: 'Replies get sorted into “wants a quote”, “call me” or “not now”. The quote helper turns a drawing into a price. You make the call and close the order.',
+      Visual: ReplyMock,
+      meta: 'Step 3 / Win',
     },
   ]
 
@@ -911,7 +965,7 @@ function Protocol() {
         <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ How It Works</span>
         <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink mt-4 leading-[1.05] tracking-tight max-w-3xl">
           Three steps.
-          <span className="block font-serif italic font-medium text-primary-dark">Zero busywork.</span>
+          <span className="block font-serif italic font-medium text-primary-dark">You stay in charge.</span>
         </h2>
       </div>
 
@@ -926,7 +980,7 @@ function Protocol() {
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs uppercase tracking-[0.25em] text-muted">{step.meta}</span>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary-dark bg-primary/10 px-2.5 py-1 rounded-full">
-                    Aiventre Protocol
+                    Aiventre
                   </span>
                 </div>
 
@@ -943,15 +997,11 @@ function Protocol() {
                 <p className="text-muted text-base sm:text-lg leading-relaxed max-w-lg">{step.text}</p>
               </div>
 
-              <div className="lg:col-span-2 relative overflow-hidden min-h-[300px] lg:min-h-full bg-deep">
-                <img src={step.image} alt={step.alt} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-deep/60 via-transparent to-deep/15" />
-                <div className="absolute top-5 left-5 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full pl-3 pr-4 py-1.5 shadow-lg">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-ink">Step {step.num}</span>
-                </div>
-                <div className="absolute bottom-4 right-4 font-mono text-[10px] uppercase tracking-widest text-white/70">
-                  {step.num} / Aiventre
+              <div className="lg:col-span-2 relative overflow-hidden min-h-[340px] lg:min-h-full bg-deep flex items-center justify-center p-8">
+                <div className="absolute inset-0 grid-bg opacity-20" />
+                <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-primary/30 blur-3xl" />
+                <div className="relative w-full flex justify-center">
+                  <step.Visual />
                 </div>
               </div>
             </div>
@@ -967,7 +1017,10 @@ function Protocol() {
 ---------------------------------------------------------------- */
 function ServicesGrid() {
   const ref = useRef(null)
+  const reduced = useReducedMotion()
+
   useEffect(() => {
+    if (reduced) return
     const ctx = gsap.context(() => {
       gsap.from('.svc-tile', {
         scrollTrigger: { trigger: ref.current, start: 'top 90%', once: true },
@@ -979,7 +1032,7 @@ function ServicesGrid() {
       })
     }, ref)
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
 
   return (
     <section ref={ref} className="relative py-24 px-6 sm:px-10 lg:px-16 bg-deep text-white overflow-hidden rounded-t-6xl">
@@ -990,14 +1043,15 @@ function ServicesGrid() {
       <div className="relative max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-14">
           <div>
-            <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary">╱ Everything You Need</span>
+            <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary">╱ Everything Included</span>
             <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl mt-4 leading-[1.05] tracking-tight">
-              One system,
-              <span className="block font-serif italic font-medium text-primary">start to close.</span>
+              Idle machine,
+              <span className="block font-serif italic font-medium text-primary">to purchase order.</span>
             </h2>
           </div>
           <p className="text-white/60 max-w-md text-base leading-relaxed">
-            From first lead to signed deal — Aiventre runs your entire outbound sales motion, in the background.
+            Everything between “we have spare capacity” and a signed PO — the research and paperwork done for
+            you, the relationships kept by you.
           </p>
         </div>
 
@@ -1049,18 +1103,18 @@ function TrustSignals() {
   const badges = [
     {
       Icon: ShieldCheck,
-      title: 'Privacy-first by design',
-      text: 'Your customer data is encrypted and used only to reach out on your behalf. We never sell or share it with third parties.',
+      title: 'You approve every email',
+      text: 'Aiventre never sends anything on its own. Every email is a draft until you read it and send it from your own address.',
     },
     {
-      Icon: Zap,
-      title: 'Live in under a day',
-      text: 'No CRM migration, no long onboarding calls. Connect your business details and Aiventre starts working immediately.',
+      Icon: Search,
+      title: 'Real companies, real sources',
+      text: 'Every buyer comes with the link where it was found. Only published business contacts — no bought lists, no guessed emails.',
     },
     {
-      Icon: Users,
-      title: 'Your team stays in control',
-      text: 'Every call, email and booking shows up in your dashboard in real time — AI does the work, you stay fully in the loop.',
+      Icon: PhoneOff,
+      title: 'No robot calls',
+      text: 'Manufacturing runs on trust. The AI prepares you; you make the calls. Buyers talk to the owner, not a machine.',
     },
   ]
 
@@ -1068,8 +1122,8 @@ function TrustSignals() {
     <section ref={ref} className="relative py-14 sm:py-20 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
-          <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Why Businesses Trust Us</span>
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-ink mt-3 tracking-tight">More than automation.</h2>
+          <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Built For Trust</span>
+          <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-ink mt-3 tracking-tight">An assistant, not a spam machine.</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -1088,11 +1142,15 @@ function TrustSignals() {
           ))}
         </div>
 
-        <div className="text-center">
-          <a href="#contact" className="magnetic-btn inline-flex items-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full shadow-xl shadow-primary/30">
-            Book a Demo
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="#contact" className="magnetic-btn inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full shadow-xl shadow-primary/30">
+            Join the pilot
             <ArrowRight className="h-4 w-4" />
           </a>
+          <Link to="/app" className="lift-on-hover inline-flex items-center justify-center gap-2 border border-divider bg-white text-ink font-semibold px-7 py-3.5 rounded-full">
+            Open the app
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>
@@ -1102,162 +1160,180 @@ function TrustSignals() {
 /* ----------------------------------------------------------------
    Contact Form
 ---------------------------------------------------------------- */
+const EMPTY_FORM = { name: '', shop: '', phone: '', city: '', email: '', message: '' }
+
+const FORM_LABELS = {
+  name: 'Name',
+  shop: 'Shop',
+  phone: 'Phone / WhatsApp',
+  city: 'City',
+  email: 'Email',
+  message: 'Message',
+}
+
+const mailtoHref = (form) => {
+  const body = Object.entries(form)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${FORM_LABELS[k]}: ${v}`)
+    .join('\n')
+  const subject = `Pilot — ${form.shop || form.name}`
+  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
 function ContactForm() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', message: '' })
-  const [files, setFiles] = useState([])
+  const [form, setForm] = useState(EMPTY_FORM)
+  // idle | sending | sent | mailto | error
   const [status, setStatus] = useState('idle')
-  const dropRef = useRef(null)
 
-  const handleSubmit = (e) => {
+  const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }))
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.name || !form.email || !form.message) return
+    if (!form.name || !form.phone) return
+
+    if (!FORM_ENDPOINT) {
+      window.location.href = mailtoHref(form)
+      setStatus('mailto')
+      return
+    }
+
     setStatus('sending')
-    setTimeout(() => setStatus('sent'), 1200)
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ ...form, _subject: `Pilot — ${form.shop || form.name}` }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setStatus('sent')
+      setForm(EMPTY_FORM)
+    } catch {
+      setStatus('error')
+    }
   }
 
-  const handleFiles = (newFiles) => {
-    setFiles((prev) => [...prev, ...Array.from(newFiles)].slice(0, 5))
-  }
+  const done = status === 'sent' || status === 'mailto'
 
   return (
     <section id="contact" className="relative py-24 sm:py-32 px-6 sm:px-10 lg:px-16 bg-background">
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
           <div className="lg:col-span-5">
-            <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Get Started</span>
+            <span className="font-mono text-xs uppercase tracking-[0.25em] text-primary-dark">╱ Pilot</span>
             <h2 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink mt-4 leading-[1.05] tracking-tight">
-              Ready to stop
-              <span className="block font-serif italic font-medium text-primary-dark">chasing leads?</span>
+              Machines idle
+              <span className="block font-serif italic font-medium text-primary-dark">this week?</span>
             </h2>
             <p className="text-muted text-lg mt-6 leading-relaxed max-w-md">
-              Tell us about your business and we'll show you exactly how Aiventre can start finding and closing
-              customers for you.
+              We’re running a pilot with a few CNC/VMC job shops and setting each one up personally. Tell us about
+              your shop and we’ll call you.
             </p>
 
             <div className="mt-10 space-y-4">
-              <a href="tel:+919876543210" className="lift-on-hover flex items-center gap-4 group">
-                <span className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary transition">
-                  <Phone className="h-5 w-5 text-primary group-hover:text-white" />
-                </span>
-                <span>
-                  <span className="block font-mono text-[10px] uppercase tracking-widest text-muted">Call us directly</span>
-                  <span className="font-display font-semibold text-ink text-lg">+91 98765 43210</span>
-                </span>
-              </a>
-
-              <a href="mailto:hello@aiventre.com" className="lift-on-hover flex items-center gap-4 group">
-                <span className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary transition">
-                  <Mail className="h-5 w-5 text-primary group-hover:text-white" />
-                </span>
-                <span>
-                  <span className="block font-mono text-[10px] uppercase tracking-widest text-muted">Email us</span>
-                  <span className="font-display font-semibold text-ink text-lg">hello@aiventre.com</span>
-                </span>
-              </a>
-
+              {CONTACT_PHONE && (
+                <ContactLink href={telHref(CONTACT_PHONE)} Icon={Phone} label="Call us directly" value={CONTACT_PHONE} />
+              )}
+              {WHATSAPP_NUMBER && (
+                <ContactLink
+                  href={whatsappHref('Hi, I’d like to join the Aiventre pilot for my shop.')}
+                  Icon={MessageCircle}
+                  label="Chat on WhatsApp"
+                  value="Message us"
+                  external
+                />
+              )}
+              <ContactLink href={`mailto:${CONTACT_EMAIL}`} Icon={Mail} label="Email us" value={CONTACT_EMAIL} />
               <div className="flex items-center gap-4">
                 <span className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                   <MapPin className="h-5 w-5 text-primary" />
                 </span>
                 <span>
                   <span className="block font-mono text-[10px] uppercase tracking-widest text-muted">Based in</span>
-                  <span className="font-display font-semibold text-ink text-lg">India · Remote-first</span>
+                  <span className="font-display font-semibold text-ink text-lg">India</span>
                 </span>
               </div>
             </div>
 
             <div className="mt-10 p-5 rounded-3xl bg-primary/5 border border-primary/15">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-primary-dark mb-2">Your Data, Protected</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-primary-dark mb-2">Your details</p>
               <p className="text-sm text-muted leading-relaxed">
-                We only use your information to reach out about your request. Your data is stored securely and never
-                shared with third-party marketers.
+                We only use what you send here to get in touch about Aiventre. We don’t share it with anyone.
               </p>
             </div>
           </div>
 
           <div className="lg:col-span-7">
             <form onSubmit={handleSubmit} className="bg-surface border border-divider rounded-5xl p-7 sm:p-10 shadow-xl shadow-primary/5">
-              {status !== 'sent' ? (
+              {!done ? (
                 <>
                   <div className="grid sm:grid-cols-2 gap-5">
-                    <Field label="Name" required value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-                    <Field label="Email" type="email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-                    <Field label="Phone" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-                    <Field label="Company" value={form.company} onChange={(v) => setForm({ ...form, company: v })} />
+                    <Field label="Your name" required value={form.name} onChange={set('name')} autoComplete="name" />
+                    <Field label="Shop name" value={form.shop} onChange={set('shop')} autoComplete="organization" />
+                    <Field label="Phone / WhatsApp" type="tel" required value={form.phone} onChange={set('phone')} autoComplete="tel" />
+                    <Field label="City" value={form.city} onChange={set('city')} autoComplete="address-level2" />
+                  </div>
+                  <div className="mt-5">
+                    <Field label="Email" type="email" value={form.email} onChange={set('email')} autoComplete="email" />
                   </div>
 
                   <div className="mt-5">
-                    <label className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted mb-2 block">Your message *</label>
+                    <label htmlFor="field-message" className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted mb-2 block">
+                      Your machines
+                    </label>
                     <textarea
+                      id="field-message"
                       value={form.message}
-                      onChange={(e) => setForm({ ...form, message: e.target.value })}
-                      required
-                      rows={5}
-                      placeholder="Tell us about your business and what you're looking for..."
+                      onChange={(e) => set('message')(e.target.value)}
+                      rows={4}
+                      placeholder="e.g. 2 VMC 850, 1 CNC lathe. Tractor and auto parts. Idle 2–3 days a week."
                       className="w-full bg-background border border-divider rounded-2xl px-4 py-3.5 text-ink placeholder-muted/60 focus:border-primary focus:ring-4 focus:ring-primary/15 outline-none transition resize-none font-body"
                     />
                   </div>
 
-                  <div
-                    ref={dropRef}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      dropRef.current?.classList.add('!border-primary', '!bg-primary/5')
-                    }}
-                    onDragLeave={() => {
-                      dropRef.current?.classList.remove('!border-primary', '!bg-primary/5')
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      dropRef.current?.classList.remove('!border-primary', '!bg-primary/5')
-                      handleFiles(e.dataTransfer.files)
-                    }}
-                    className="mt-5 border-2 border-dashed border-divider rounded-3xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                  >
-                    <input
-                      type="file"
-                      multiple
-                      id="file-up"
-                      className="hidden"
-                      onChange={(e) => handleFiles(e.target.files)}
-                      accept="image/*,.pdf,.doc,.docx"
-                    />
-                    <label htmlFor="file-up" className="cursor-pointer block">
-                      <Upload className="h-6 w-6 mx-auto text-primary-dark mb-2" />
-                      <p className="font-display font-semibold text-ink text-sm">Attach files (optional)</p>
-                      <p className="text-xs text-muted mt-1">Price lists, brochures, or anything that helps us understand your business (max 5 files)</p>
-                      {files.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                          {files.map((f, i) => (
-                            <span key={i} className="inline-flex items-center gap-1.5 bg-primary/10 text-primary-dark text-xs px-3 py-1.5 rounded-full font-mono">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {f.name.length > 22 ? f.name.slice(0, 22) + '…' : f.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                  {status === 'error' && (
+                    <p role="alert" className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      That didn’t go through. Please try again, or{' '}
+                      <a href={mailtoHref(form)} className="font-semibold underline">
+                        send it by email
+                      </a>
+                      .
+                    </p>
+                  )}
 
                   <div className="mt-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <p className="text-xs text-muted">We'll get back to you within one business day. Fields marked * are required.</p>
+                    <p className="text-xs text-muted">We’ll call you within one business day. Fields marked * are required.</p>
                     <button
                       type="submit"
                       disabled={status === 'sending'}
                       className="magnetic-btn inline-flex items-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full shadow-lg shadow-primary/30 disabled:opacity-50"
                     >
-                      {status === 'sending' ? 'Sending...' : 'Send Request'}
+                      {status === 'sending' ? 'Sending…' : 'Join the pilot'}
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-12">
+                <div className="text-center py-12" role="status">
                   <div className="h-16 w-16 mx-auto rounded-full bg-primary/15 flex items-center justify-center mb-6">
                     <CheckCircle2 className="h-8 w-8 text-primary-dark" />
                   </div>
-                  <h3 className="font-display font-bold text-2xl text-ink mb-3">Thanks — we'll be in touch</h3>
-                  <p className="text-muted max-w-md mx-auto">We'll reach out within one business day to talk through your business.</p>
+                  {status === 'sent' ? (
+                    <>
+                      <h3 className="font-display font-bold text-2xl text-ink mb-3">Thanks — we’ll be in touch</h3>
+                      <p className="text-muted max-w-md mx-auto">We’ll call you within one business day to talk through your shop.</p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="font-display font-bold text-2xl text-ink mb-3">Almost done — hit send in your email app</h3>
+                      <p className="text-muted max-w-md mx-auto">
+                        We’ve filled in an email to {CONTACT_EMAIL} with your details. If nothing opened,{' '}
+                        <a href={mailtoHref(form)} className="text-primary underline">
+                          click here
+                        </a>
+                        .
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </form>
@@ -1268,16 +1344,37 @@ function ContactForm() {
   )
 }
 
-function Field({ label, type = 'text', required, value, onChange }) {
+function ContactLink({ href, Icon, label, value, external = false }) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className="lift-on-hover flex items-center gap-4 group"
+    >
+      <span className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary transition">
+        <Icon className="h-5 w-5 text-primary group-hover:text-white" />
+      </span>
+      <span>
+        <span className="block font-mono text-[10px] uppercase tracking-widest text-muted">{label}</span>
+        <span className="font-display font-semibold text-ink text-lg">{value}</span>
+      </span>
+    </a>
+  )
+}
+
+function Field({ label, type = 'text', required, value, onChange, autoComplete }) {
+  const id = `field-${label.toLowerCase().replace(/[^a-z]+/g, '-')}`
   return (
     <div>
-      <label className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted mb-2 block">
+      <label htmlFor={id} className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted mb-2 block">
         {label} {required && '*'}
       </label>
       <input
+        id={id}
         type={type}
         required={required}
         value={value}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-background border border-divider rounded-2xl px-4 py-3.5 text-ink placeholder-muted/60 focus:border-primary focus:ring-4 focus:ring-primary/15 outline-none transition font-body"
       />
@@ -1297,13 +1394,13 @@ function Footer() {
       <div className="relative px-6 sm:px-10 lg:px-16 pt-20 pb-10 max-w-7xl mx-auto">
         <div className="border-b border-white/10 pb-12 mb-12">
           <h2 className="font-display font-extrabold text-5xl sm:text-7xl md:text-8xl leading-[0.92] tracking-tight">
-            Sales, powered
-            <span className="font-serif italic font-medium text-primary block">by AI.</span>
+            Idle machines?
+            <span className="font-serif italic font-medium text-primary block">Let’s fill them.</span>
           </h2>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-8 gap-6">
-            <p className="text-white/50 max-w-md">Aiventre — the AI Sales OS built for Indian small businesses.</p>
+            <p className="text-white/50 max-w-md">Aiventre — the AI sales assistant for manufacturing job shops.</p>
             <a href="#contact" className="magnetic-btn inline-flex items-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-full self-start sm:self-auto">
-              Book a Demo
+              Join the pilot
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -1318,14 +1415,14 @@ function Footer() {
               <span className="font-display font-bold text-lg">Aiventre</span>
             </div>
             <p className="text-white/50 text-sm leading-relaxed max-w-xs">
-              The AI Sales OS that finds your leads, handles outreach, books meetings, and shows it all in one
-              dashboard.
+              Finds buyers, drafts the emails, sorts the replies and helps you quote — so you can spend your time
+              on the shop floor.
             </p>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-white/30 mt-6">Made for Indian SMBs</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-white/30 mt-6">Made for Indian job shops</p>
           </div>
 
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary mb-4">Services</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary mb-4">Product</p>
             <ul className="space-y-2.5">
               {SERVICES_FULL.slice(0, 4).map((s, i) => (
                 <li key={i}>
@@ -1340,7 +1437,7 @@ function Footer() {
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary mb-4">Company</p>
             <ul className="space-y-2.5">
-              <li><a href="#why-aiventre" className="text-white/65 hover:text-primary transition text-sm">Why Aiventre</a></li>
+              <li><Link to="/app" className="text-white/65 hover:text-primary transition text-sm">Open the app</Link></li>
               <li><a href="#how-it-works" className="text-white/65 hover:text-primary transition text-sm">How it Works</a></li>
               <li><a href="#contact" className="text-white/65 hover:text-primary transition text-sm">Contact</a></li>
             </ul>
@@ -1349,32 +1446,28 @@ function Footer() {
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary mb-4">Contact</p>
             <ul className="space-y-2.5">
+              {CONTACT_PHONE && (
+                <li>
+                  <a href={telHref(CONTACT_PHONE)} className="text-white/65 hover:text-primary transition text-sm">{CONTACT_PHONE}</a>
+                </li>
+              )}
               <li>
-                <a href="tel:+919876543210" className="text-white/65 hover:text-primary transition text-sm">+91 98765 43210</a>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-white/65 hover:text-primary transition text-sm">{CONTACT_EMAIL}</a>
               </li>
-              <li>
-                <a href="mailto:hello@aiventre.com" className="text-white/65 hover:text-primary transition text-sm">hello@aiventre.com</a>
-              </li>
-              <li className="text-white/65 text-sm">India, Remote-first</li>
+              <li className="text-white/65 text-sm">India</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-14 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
-              <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60">
-              System Operational · Finding leads for you
-            </span>
-          </div>
+          <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60">
+            Pilot · Onboarding our first shops
+          </span>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/50 text-xs font-mono">
             <Link to="/privacy" className="hover:text-primary transition">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-primary transition">Terms</Link>
-            <span>© 2026 Aiventre</span>
+            <span>© {new Date().getFullYear()} Aiventre</span>
           </div>
         </div>
       </div>
@@ -1386,6 +1479,8 @@ function Footer() {
    App
 ---------------------------------------------------------------- */
 export default function App() {
+  const { hash } = useLocation()
+
   useEffect(() => {
     const t1 = setTimeout(() => ScrollTrigger.refresh(), 200)
     const t2 = setTimeout(() => ScrollTrigger.refresh(), 1000)
@@ -1394,6 +1489,14 @@ export default function App() {
       clearTimeout(t2)
     }
   }, [])
+
+  // Arriving from another route (e.g. /app → /#contact): scroll to the section.
+  useEffect(() => {
+    if (!hash) return
+    // Instant, not smooth: a smooth scroll gets cut short by ScrollTrigger's refresh.
+    const t = setTimeout(() => document.querySelector(hash)?.scrollIntoView({ behavior: 'instant' }), 50)
+    return () => clearTimeout(t)
+  }, [hash])
 
   return (
     <div className="relative">

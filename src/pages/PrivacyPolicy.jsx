@@ -16,26 +16,34 @@ export default function PrivacyPolicy() {
         </div>
         <h1 className="font-display font-extrabold text-4xl sm:text-5xl tracking-tight mb-8">Privacy Policy</h1>
         <div className="space-y-6 text-muted leading-relaxed text-[15px]">
-          <p>Last updated: July 2026</p>
+          <p>Last updated: September 2026</p>
           <p>
-            Aiventre ("we", "us") builds AI-powered sales tools for small businesses. This policy explains what
-            information we collect, how we use it, and the choices you have.
+            Aiventre ("we", "us") is an AI sales assistant for manufacturing job shops. This policy explains what
+            information the service handles, how it is used, and the choices you have.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we collect</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we handle</h2>
           <p>
-            We collect the business and contact details you provide to us, along with information about the leads
-            and customers you ask Aiventre to reach out to on your behalf, so we can send emails, place calls, and
-            schedule appointments as instructed.
+            Your shop profile (machines, capabilities, contact details), the buyer companies you or the AI agent add
+            to your list, email drafts, replies you paste in, and drawings you upload for quoting. Buyer details are
+            limited to business information the company has published itself, such as a website, a general or
+            purchase email address and an office phone number, together with the page where it was found. We do not
+            buy contact lists.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">How we use it</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Where it is stored</h2>
           <p>
-            Data is used solely to operate your account — finding leads, sending outreach, handling calls, and
-            managing bookings. We do not sell your data or your customers' data to third parties.
+            During the pilot, your data is saved in your own browser on your device. It is not stored on our
+            servers. You can download a backup or clear it at any time.
           </p>
-          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Data security</h2>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">AI processing</h2>
           <p>
-            All data is encrypted in transit and at rest. Access is limited to the systems required to deliver the
-            service to you.
+            When you use an AI feature, the relevant information (for example your shop profile and the text or
+            drawing you submitted) is sent through our server to our AI provider, Anthropic, to generate the result.
+            It is used only to provide that result. The AI agent also searches the public web to find companies.
+          </p>
+          <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">What we don't do</h2>
+          <p>
+            We do not sell your data, and Aiventre never sends emails or makes calls on your behalf — you review and
+            send everything yourself.
           </p>
           <h2 className="font-display font-bold text-xl text-ink mt-8 mb-2">Contact</h2>
           <p>
