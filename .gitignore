@@ -25,3 +25,6 @@ dist-ssr
 
 # Local env (contact details, form endpoint)
 .env
+
+# Expo cache if the app is ever started from the repo root by mistake
+.expo/
