@@ -35,12 +35,19 @@
           "imageWidth": 96
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#247b50"
+        }
+      ],
       [
         "expo-image-picker",
         {
           "photosPermission": "Aiventre opens your photos so you can pick a drawing to quote.",
-          "cameraPermission": "Aiventre uses the camera so you can photograph a drawing to quote."
+          "cameraPermission": "Aiventre uses the camera so you can photograph a drawing to quote.",
+          "microphonePermission": false
         }
       ],
       [
