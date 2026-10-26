@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { ShopPlace } from '@/components/place';
 import { Box, Button, Chip, Field, Label, Link, Rule, Screen, Section, Segmented } from '@/components/ui';
+import { runTask, type SetupResult } from '@/lib/api';
 import { confirm } from '@/lib/confirm';
-import { WORK_TYPES } from '@/lib/demo';
+import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
+import type { Shop } from '@/lib/model';
 import { setAccessCode, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
-import { loadDemo, resetAll, updateShop, useData } from '@/lib/store';
-import { makeStyles, S, type } from '@/lib/theme';
+import { pickBackup, shareBackup, shareProfile } from '@/lib/share';
+import { loadDemo, mergeShop, resetAll, updateShop, useData } from '@/lib/store';
+import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const COMING = [
   'Searches run by themselves every night, with a notification when buyers turn up',
-  'Quotes saved with each buyer, so you can follow up',
   'Login, and your shop synced between phone and laptop',
 ];
 
@@ -22,24 +24,154 @@ const THEMES: { value: ThemePref; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ];
 
+const LISTS = [
+  ['capabilities', 'What you can do', 'e.g. 3-axis milling, drilling, tapping'],
+  ['materials', 'Materials', 'e.g. MS, EN8, aluminium, SS304'],
+  ['industries', 'Industries you serve', 'e.g. tractor parts, pumps, valves'],
+  ['certifications', 'Certifications', 'e.g. ISO 9001:2015'],
+] as const;
+
+const toList = (text: string) => text.split(',').map((x) => x.trim()).filter(Boolean);
+
+/** A comma-separated list, kept as typed until you leave the field. */
+function ListField({ label, placeholder, value, onChange }: { label: string; placeholder: string; value?: string[]; onChange: (v: string[]) => void }) {
+  const [text, setText] = useState((value ?? []).join(', '));
+  return <Field label={label} placeholder={placeholder} value={text} onChangeText={setText} onBlur={() => onChange(toList(text))} />;
+}
+
+/** "Tell us more": the owner describes the shop and the AI adds what it hears to the profile. */
+function Describe() {
+  const { c } = useTheme();
+  const s = useStyles();
+  const data = useData();
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<SetupResult | null>(null);
+
+  const run = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const r = await runTask<SetupResult>('setup_shop', { text, work_options: WORK_TYPES, machine_options: machineTypesFor([]) });
+      mergeShop({
+        name: r.shop_name,
+        area: r.area,
+        city: r.city,
+        state: r.state,
+        summary: r.summary,
+        phone: r.phone,
+        email: r.email,
+        work: r.work.filter((w) => WORK_TYPES.includes(w)),
+        capabilities: r.capabilities,
+        materials: r.materials,
+        industries: r.industries,
+        certifications: r.certifications,
+      });
+      setResult(r);
+      setText('');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const known = new Set(data.machines.map((m) => m.type.toLowerCase()));
+  const newMachines = result?.machines.filter((m) => !known.has(m.type.toLowerCase())) ?? [];
+
+  return (
+    <Box>
+      <Text style={s.body}>Tell it more about your shop — what you make, materials, industries, certificates. Tap the mic to talk.</Text>
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        multiline
+        textAlignVertical="top"
+        placeholder="e.g. We mostly do tractor and pump parts in EN8 and cast iron, ISO 9001 certified, tolerances up to 10 microns."
+        placeholderTextColor={c.faint}
+        selectionColor={c.text}
+        style={s.story}
+      />
+      <Button label={busy ? 'Reading…' : 'Add to my profile'} icon="sparkles-outline" kind="secondary" disabled={busy || text.trim().length < 10} onPress={run} />
+      {busy && <ActivityIndicator color={c.muted} />}
+      {!!error && <Text style={[s.meta, { color: c.idle }]}>{error}</Text>}
+      {result && (
+        <View style={{ gap: 4 }}>
+          <Text style={s.strong}>Added to your profile below.</Text>
+          {newMachines.length > 0 && (
+            <Text style={s.meta}>
+              It also heard {newMachines.map((m) => `${m.type} ×${m.count}`).join(', ')} — add them in the Machines tab so they show on your board.
+            </Text>
+          )}
+          {result.missing.slice(0, 3).map((m) => (
+            <Text key={m} style={s.meta}>
+              • {m}
+            </Text>
+          ))}
+        </View>
+      )}
+    </Box>
+  );
+}
+
 export default function ShopScreen() {
+  const { c } = useTheme();
   const s = useStyles();
   const data = useData();
   const prefs = usePrefs();
   const shop = data.shop!;
-  const [form, setForm] = useState(shop);
+  const [form, setForm] = useState<Shop>(shop);
+  // When the profile changes elsewhere (the AI, a restore), start again from the new one.
+  const [base, setBase] = useState(shop);
+  if (base !== shop) {
+    setBase(shop);
+    setForm(shop);
+  }
   const [saved, setSaved] = useState(false);
   const [code, setCode] = useState('');
+  const [describing, setDescribing] = useState(false);
+  const [fileError, setFileError] = useState('');
   const changed = JSON.stringify(form) !== JSON.stringify(shop);
+  const patch = (p: Partial<Shop>) => setForm((f) => ({ ...f, ...p }));
 
-  const toggleWork = (w: string) =>
-    setForm((f) => ({ ...f, work: f.work.includes(w) ? f.work.filter((x) => x !== w) : [...f.work, w] }));
+  const toggleWork = (w: string) => patch({ work: form.work.includes(w) ? form.work.filter((x) => x !== w) : [...form.work, w] });
 
   return (
     <Screen title="My shop">
-      <Box style={{ gap: S.lg }}>
-        <Field label="Shop name" value={form.name} onChangeText={(name) => setForm({ ...form, name })} />
-        <Field label="Your name" value={form.owner} onChangeText={(owner) => setForm({ ...form, owner })} />
+      <Button label="Send my capability profile (PDF)" icon="document-text-outline" onPress={() => shareProfile(data).catch((e) => setFileError((e as Error).message))} />
+      <Text style={[s.meta, { marginTop: -S.sm }]}>One page about your shop, machines and what you make — to send buyers on WhatsApp or email.</Text>
+      {!!fileError && <Text style={[s.meta, { color: c.idle }]}>{fileError}</Text>}
+
+      <Section title="Profile" right={!describing && <Link label="Describe it to AI" onPress={() => setDescribing(true)} />} />
+      {describing && <Describe />}
+
+      <Box style={{ gap: S.lg }} key={JSON.stringify(base)}>
+        <Field label="Shop name" value={form.name} onChangeText={(name) => patch({ name })} />
+        <Field label="Your name" value={form.owner} onChangeText={(owner) => patch({ owner })} />
+        <Field
+          label="About the shop"
+          value={form.summary ?? ''}
+          onChangeText={(summary) => patch({ summary })}
+          multiline
+          placeholder="One or two lines a purchase manager would want to read"
+          style={{ minHeight: 84, paddingTop: 12, textAlignVertical: 'top' }}
+        />
+        <View style={s.row}>
+          <View style={{ flex: 1 }}>
+            <Field label="Phone for buyers" value={form.phone ?? ''} onChangeText={(phone) => patch({ phone })} keyboardType="phone-pad" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Hour rate ₹"
+              value={form.rate ? String(form.rate) : ''}
+              onChangeText={(r) => patch({ rate: Number(r) || undefined })}
+              keyboardType="number-pad"
+              placeholder="800"
+            />
+          </View>
+        </View>
+        <Field label="Email for buyers" value={form.email ?? ''} onChangeText={(email) => patch({ email })} keyboardType="email-address" autoCapitalize="none" />
         <View style={{ gap: S.sm }}>
           <Label>What work do you do?</Label>
           <View style={s.chips}>
@@ -48,7 +180,10 @@ export default function ShopScreen() {
             ))}
           </View>
         </View>
-        <ShopPlace value={form} onChange={(p) => setForm((f) => ({ ...f, ...p }))} />
+        {LISTS.map(([k, label, placeholder]) => (
+          <ListField key={k} label={label} placeholder={placeholder} value={form[k]} onChange={(v) => patch({ [k]: v })} />
+        ))}
+        <ShopPlace value={form} onChange={patch} />
         <Button
           label={saved && !changed ? 'Saved' : 'Save'}
           icon={saved && !changed ? 'checkmark' : undefined}
@@ -66,7 +201,7 @@ export default function ShopScreen() {
       <Section title="AI" />
       {prefs.accessCode ? (
         <Box style={s.between}>
-          <Text style={s.body}>Access code saved on this phone</Text>
+          <Text style={[s.body, { flex: 1 }]}>Access code saved on this phone</Text>
           <Link label="Change" onPress={() => setAccessCode('')} />
         </Box>
       ) : (
@@ -75,6 +210,26 @@ export default function ShopScreen() {
           <Button label="Save code" kind="secondary" disabled={!code.trim()} onPress={() => setAccessCode(code)} />
         </Box>
       )}
+
+      <Section title="Backup" />
+      <View style={s.row}>
+        <Button label="Save a backup" icon="download-outline" kind="secondary" small flex onPress={() => shareBackup().catch((e) => setFileError((e as Error).message))} />
+        <Button
+          label="Restore"
+          icon="refresh-outline"
+          kind="secondary"
+          small
+          flex
+          onPress={() =>
+            confirm('Restore from a backup?', 'Everything on this phone is replaced by what’s in the backup file.', 'Choose file', () => {
+              pickBackup()
+                .then((done) => done && router.replace('/'))
+                .catch((e) => setFileError((e as Error).message));
+            })
+          }
+        />
+      </View>
+      <Text style={[s.meta, { marginTop: -S.sm }]}>Until login arrives, your shop lives only on this phone. Save a backup to Drive or WhatsApp now and then.</Text>
 
       <Section title="Coming next" />
       <Box flush>
@@ -92,7 +247,7 @@ export default function ShopScreen() {
           label="Load the sample shop"
           kind="secondary"
           onPress={() =>
-            confirm('Load the sample shop?', 'This replaces your machines and jobs with a demo shop.', 'Load', () => {
+            confirm('Load the sample shop?', 'This replaces your machines, jobs and buyers with a demo shop.', 'Load', () => {
               loadDemo();
               router.replace('/');
             })
@@ -102,7 +257,7 @@ export default function ShopScreen() {
           label="Reset everything"
           kind="danger"
           onPress={() =>
-            confirm('Reset everything?', 'All machines, jobs and shop details on this phone will be deleted.', 'Reset', () => {
+            confirm('Reset everything?', 'All machines, jobs, buyers and shop details on this phone will be deleted.', 'Reset', () => {
               resetAll();
               router.replace('/onboarding');
             })
@@ -115,7 +270,21 @@ export default function ShopScreen() {
 
 const useStyles = makeStyles((c) => ({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
+  row: { flexDirection: 'row', gap: S.md },
   item: { ...type.body, color: c.muted, paddingHorizontal: S.lg, paddingVertical: 14 },
-  body: { ...type.body, color: c.muted, flex: 1 },
+  body: { ...type.body, color: c.muted },
+  strong: { ...type.strong, color: c.text },
+  meta: { ...type.meta, color: c.muted },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  story: {
+    minHeight: 110,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: R.control,
+    padding: 14,
+    color: c.text,
+    fontSize: 16,
+    lineHeight: 22,
+  },
 }));

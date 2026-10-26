@@ -2,8 +2,8 @@ import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { demoData } from './demo';
-import { addDays, type Data, type Job, jobLabel, type Lead, type Machine, type Shop, today } from './model';
-import { bookDoneCheck, cancelDoneCheck } from './notify';
+import { addDays, type Data, FOLLOW_UP_DAYS, type Job, jobLabel, type Lead, type Machine, type Shop, today } from './model';
+import { bookDoneCheck, bookFollowUp, cancelReminder } from './notify';
 
 /**
  * The shop's data, saved on the phone. Screens read it with useData() and change it
@@ -31,7 +31,7 @@ function set(next: Data) {
 export async function loadData() {
   try {
     const saved = JSON.parse((await AsyncStorage.getItem(KEY)) ?? 'null');
-    if (saved?.version === 1) data = saved;
+    if (saved?.version === 1) data = { ...saved, leads: (saved.leads ?? []).map(normalizeLead) };
   } catch {
     // Corrupt data: start fresh rather than crash.
   }
@@ -58,7 +58,7 @@ const machineName = (id: string) => data.machines.find((m) => m.id === id)?.name
 async function rebook(jobId: string) {
   const job = data.jobs.find((j) => j.id === jobId);
   if (!job) return;
-  await cancelDoneCheck(job.notificationId);
+  await cancelReminder(job.notificationId);
   const id = job.status === 'running' && job.due ? await bookDoneCheck(machineName(job.machineId), jobLabel(job), job.due) : null;
   patchJob(jobId, { notificationId: id });
 }
@@ -96,7 +96,7 @@ export function updateMachine(id: string, patch: Partial<Machine>) {
 }
 
 export function removeMachine(id: string) {
-  data.jobs.filter((j) => j.machineId === id).forEach((j) => cancelDoneCheck(j.notificationId));
+  data.jobs.filter((j) => j.machineId === id).forEach((j) => cancelReminder(j.notificationId));
   set({ ...data, machines: data.machines.filter((m) => m.id !== id), jobs: data.jobs.filter((j) => j.machineId !== id) });
 }
 
@@ -134,7 +134,7 @@ export function updateJob(id: string, patch: Partial<Pick<Job, 'title' | 'custom
 export function finishJob(id: string) {
   const job = data.jobs.find((j) => j.id === id);
   if (!job) return;
-  cancelDoneCheck(job.notificationId);
+  cancelReminder(job.notificationId);
   const now = today();
   const next = data.jobs.find((j) => j.machineId === job.machineId && j.status === 'queued');
   set({
@@ -169,29 +169,127 @@ export function startJob(id: string) {
 
 export function removeJob(id: string) {
   const job = data.jobs.find((j) => j.id === id);
-  cancelDoneCheck(job?.notificationId ?? null);
+  cancelReminder(job?.notificationId ?? null);
   set({ ...data, jobs: data.jobs.filter((j) => j.id !== id) });
 }
 
-/* ---------------- leads ---------------- */
+/* ---------------- shop profile ---------------- */
 
-export type FoundBuyer = Omit<Lead, 'id' | 'machineId' | 'status' | 'foundAt'>;
+const uniqueList = (a: string[] = [], b: string[] = []) => [...new Set([...a, ...b].map((x) => x.trim()).filter(Boolean))];
 
-/** Saves the AI's finds for a machine, skipping companies already on the list. */
-export function addLeads(machineId: string, found: FoundBuyer[]) {
-  const leads = data.leads ?? [];
-  const key = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  // Never list the shop itself, or a company that's already on the list.
-  const seen = new Set([...leads.map((l) => key(l.company)), key(data.shop?.name ?? '')]);
-  const fresh = found
-    .filter((b) => b.company && !seen.has(key(b.company)))
-    .map((b): Lead => ({ ...b, id: uid(), machineId, status: 'new', foundAt: today() }));
-  set({ ...data, leads: [...fresh, ...leads] });
-  return fresh.length;
+/** Adds what the owner told the assistant to the profile; lists are merged, not replaced. */
+export function mergeShop(patch: Partial<Shop>) {
+  if (!data.shop) return;
+  const next: Shop = { ...data.shop };
+  for (const k of ['name', 'city', 'state', 'area', 'summary', 'phone', 'email'] as const) {
+    if (patch[k]) next[k] = patch[k];
+  }
+  for (const k of ['capabilities', 'materials', 'industries', 'certifications', 'work'] as const) {
+    if (patch[k]?.length) next[k] = uniqueList(data.shop[k], patch[k]);
+  }
+  set({ ...data, shop: next });
 }
 
-export function updateLead(id: string, patch: Partial<Pick<Lead, 'status'>>) {
-  set({ ...data, leads: (data.leads ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) });
+/* ---------------- buyers ---------------- */
+
+const stamp = () => new Date().toISOString();
+const key = (s = '') => s.toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/[^a-z0-9]/g, '');
+
+/** Fills in fields that older saves (or the AI) left out. */
+function normalizeLead(l: Partial<Lead> & { company: string }): Lead {
+  return {
+    id: l.id ?? uid(),
+    machineId: l.machineId ?? '',
+    company: l.company,
+    city: l.city ?? '',
+    state: l.state ?? '',
+    distanceKm: l.distanceKm ?? 0,
+    industry: l.industry ?? '',
+    whyFit: l.whyFit ?? '',
+    website: l.website ?? '',
+    phone: l.phone ?? '',
+    email: l.email ?? '',
+    contactRole: l.contactRole ?? '',
+    sourceUrl: l.sourceUrl ?? '',
+    subject: l.subject ?? '',
+    message: l.message ?? '',
+    status: (l.status as string) === 'not_fit' ? 'lost' : (l.status ?? 'new'),
+    followUpAt: l.followUpAt ?? null,
+    followUpNotificationId: l.followUpNotificationId ?? null,
+    notes: l.notes ?? '',
+    history: l.history ?? [{ at: stamp(), text: l.sourceUrl ? 'Found by the AI' : 'Added' }],
+    foundAt: l.foundAt ?? today(),
+  };
+}
+
+export type FoundBuyer = Partial<Omit<Lead, 'id' | 'status' | 'history' | 'foundAt'>> & { company: string };
+
+/** Saves buyers, skipping the shop itself and companies (or websites) already on the list. */
+export function addLeads(machineId: string, found: FoundBuyer[]) {
+  const leads = data.leads ?? [];
+  const seen = new Set([...leads.flatMap((l) => [key(l.company), key(l.website)]), key(data.shop?.name)].filter(Boolean));
+  const fresh: Lead[] = [];
+  const skipped: string[] = [];
+  for (const b of found) {
+    const keys = [key(b.company), key(b.website)].filter(Boolean);
+    if (!b.company?.trim() || keys.some((k) => seen.has(k))) {
+      if (b.company) skipped.push(b.company);
+      continue;
+    }
+    keys.forEach((k) => seen.add(k));
+    fresh.push(normalizeLead({ ...b, company: b.company.trim(), machineId: b.machineId ?? machineId }));
+  }
+  set({ ...data, leads: [...fresh, ...leads] });
+  return { added: fresh.length, skipped, ids: fresh.map((l) => l.id) };
+}
+
+export function updateLead(id: string, patch: Partial<Lead>, historyText?: string) {
+  set({
+    ...data,
+    leads: (data.leads ?? []).map((l) =>
+      l.id === id ? { ...l, ...patch, history: historyText ? [...l.history, { at: stamp(), text: historyText }] : l.history } : l,
+    ),
+  });
+}
+
+/** "I've sent it": remember it, and book a nudge to follow up in a few days if they stay quiet. */
+export async function markContacted(id: string, how: string) {
+  const lead = data.leads?.find((l) => l.id === id);
+  if (!lead) return;
+  await cancelReminder(lead.followUpNotificationId);
+  const followUpAt = addDays(today(), FOLLOW_UP_DAYS);
+  updateLead(
+    id,
+    { status: ['new', 'contacted'].includes(lead.status) ? 'contacted' : lead.status, followUpAt, followUpNotificationId: null },
+    `${how} · follow up in ${FOLLOW_UP_DAYS} days`,
+  );
+  const notificationId = await bookFollowUp(lead.company, followUpAt);
+  if (notificationId) updateLead(id, { followUpNotificationId: notificationId });
+}
+
+export function setLeadStatus(id: string, status: Lead['status'], label: string) {
+  const lead = data.leads?.find((l) => l.id === id);
+  if (!lead || lead.status === status) return;
+  // Once they answer (or it's settled), the follow-up nudge is no longer needed.
+  if (status !== 'contacted') cancelReminder(lead.followUpNotificationId);
+  updateLead(id, { status, ...(status !== 'contacted' && { followUpAt: null, followUpNotificationId: null }) }, `Status → ${label}`);
+}
+
+export function removeLead(id: string) {
+  const lead = data.leads?.find((l) => l.id === id);
+  cancelReminder(lead?.followUpNotificationId ?? null);
+  set({ ...data, leads: (data.leads ?? []).filter((l) => l.id !== id) });
+}
+
+/* ---------------- backup ---------------- */
+
+export const backupJson = () => JSON.stringify(data, null, 2);
+
+export function restoreBackup(text: string) {
+  const saved = JSON.parse(text);
+  if (saved?.version !== 1 || !Array.isArray(saved.machines)) throw new Error('This isn’t an Aiventre backup file.');
+  data.jobs.forEach((j) => cancelReminder(j.notificationId));
+  set({ ...saved, leads: (saved.leads ?? []).map(normalizeLead) });
 }
 
 /* ---------------- demo & reset ---------------- */
@@ -202,6 +300,6 @@ export function loadDemo() {
 }
 
 export function resetAll() {
-  data.jobs.forEach((j) => cancelDoneCheck(j.notificationId));
+  data.jobs.forEach((j) => cancelReminder(j.notificationId));
   set(empty());
 }

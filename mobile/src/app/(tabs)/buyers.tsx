@@ -1,35 +1,60 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { LeadCard } from '@/components/lead-card';
-import { Box, Button, Screen, Segmented } from '@/components/ui';
+import { LeadRow } from '@/components/lead-card';
+import { Box, Button, Chip, Link, Rule, Screen, Section } from '@/components/ui';
 import { findWork, useSearches } from '@/lib/find';
-import type { Lead } from '@/lib/model';
+import { followUpDue, type Lead } from '@/lib/model';
 import { useData } from '@/lib/store';
-import { makeStyles, S, type, useTheme } from '@/lib/theme';
+import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
-type Filter = 'new' | 'contacted' | 'all';
+const FILTERS: { id: string; label: string; test: (l: Lead) => boolean }[] = [
+  { id: 'todo', label: 'To do', test: (l) => l.status === 'new' || followUpDue(l) },
+  { id: 'contacted', label: 'Contacted', test: (l) => l.status === 'contacted' },
+  { id: 'talking', label: 'Talking', test: (l) => l.status === 'replied' || l.status === 'quote_requested' },
+  { id: 'done', label: 'Won / not now', test: (l) => l.status === 'won' || l.status === 'lost' },
+  { id: 'all', label: 'All', test: () => true },
+];
+
+function Stat({ value, label, first }: { value: number; label: string; first?: boolean }) {
+  const s = useStyles();
+  return (
+    <View style={[s.stat, !first && s.statDivider]}>
+      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.meta}>{label}</Text>
+    </View>
+  );
+}
 
 export default function BuyersScreen() {
   const { c } = useTheme();
   const s = useStyles();
   const data = useData();
   const searches = useSearches();
-  const [filter, setFilter] = useState<Filter>('new');
+  const [filter, setFilter] = useState('todo');
+  const [q, setQ] = useState('');
   const leads = data.leads ?? [];
   const name = (id: string) => data.machines.find((m) => m.id === id)?.name ?? 'a machine';
 
-  const shown = leads.filter((l) => (filter === 'all' ? true : filter === 'new' ? l.status === 'new' : l.status === 'contacted'));
-  const count = (st: Lead['status']) => leads.filter((l) => l.status === st).length;
+  const needle = q.trim().toLowerCase();
+  const shown = leads
+    .filter(FILTERS.find((f) => f.id === filter)!.test)
+    .filter((l) => !needle || [l.company, l.city, l.industry].join(' ').toLowerCase().includes(needle))
+    .sort((a, b) => Number(followUpDue(b)) - Number(followUpDue(a)));
 
   const activity = Object.entries(searches).filter(([id]) => data.machines.some((m) => m.id === id));
 
   return (
-    <Screen title="Buyers" sub="Companies the AI found for your free machines">
+    <Screen title="Buyers" sub="Companies that could send you work">
+      <View style={s.row}>
+        <Button label="Ask Aiventre" icon="sparkles-outline" small flex onPress={() => router.push('/assistant')} />
+        <Button label="Sort a reply" icon="chatbubble-ellipses-outline" kind="secondary" small flex onPress={() => router.push('/reply')} />
+      </View>
+
       {activity.map(([id, st]) =>
         st.state === 'running' ? (
-          <Box key={id} style={s.row}>
+          <Box key={id} style={s.inline}>
             <ActivityIndicator color={c.muted} />
             <View style={{ flex: 1 }}>
               <Text style={s.strong}>Finding work for {name(id)}…</Text>
@@ -53,49 +78,71 @@ export default function BuyersScreen() {
       )}
 
       {leads.length > 0 && (
-        <Segmented
-          options={[
-            { value: 'new', label: `New · ${count('new')}` },
-            { value: 'contacted', label: `Contacted · ${count('contacted')}` },
-            { value: 'all', label: 'All' },
-          ]}
-          value={filter}
-          onChange={setFilter}
-        />
-      )}
-
-      {leads.length === 0 && activity.length === 0 && (
-        <Box>
-          <Text style={s.heading}>No buyers yet</Text>
-          <Text style={s.body}>
-            When a machine has free days coming, tap “Find work” next to it on Today. The AI searches for real companies near you that
-            buy that kind of work, and writes a first message for each one. You decide who to send it to.
-          </Text>
-          <Button label="Go to Today" kind="secondary" onPress={() => router.navigate('/')} />
+        <Box flush style={{ flexDirection: 'row' }}>
+          <Stat first value={leads.filter((l) => l.status === 'new').length} label="to message" />
+          <Stat value={leads.filter((l) => followUpDue(l)).length} label="to follow up" />
+          <Stat value={leads.filter((l) => l.status === 'replied' || l.status === 'quote_requested').length} label="talking to you" />
         </Box>
       )}
 
-      {leads.length > 0 && shown.length === 0 && (
-        <Text style={s.body}>{filter === 'new' ? 'You’ve gone through every new buyer.' : 'Nobody contacted yet.'}</Text>
-      )}
-
-      {shown.map((l) => (
-        <LeadCard key={l.id} lead={l} />
-      ))}
-
-      {leads.length > 0 && (
-        <Text style={s.meta}>
-          The AI only lists companies it found on the web, with the link. Check before you send — and you send every message yourself.
-        </Text>
+      {leads.length === 0 && activity.length === 0 ? (
+        <Box>
+          <Text style={s.heading}>No buyers yet</Text>
+          <Text style={s.body}>
+            Tap “Find work” next to a free machine on Today, or ask Aiventre for anything — “find tractor makers within 200 km”, “check
+            tenders for machining”. It finds real companies, with the link, and writes the first message. You send it.
+          </Text>
+          <Button label="Add a buyer I know" kind="secondary" onPress={() => router.push('/buyer/new')} />
+        </Box>
+      ) : (
+        <>
+          <Section title="Your list" right={<Link label="+ Add" onPress={() => router.push('/buyer/new')} />} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters} style={{ marginHorizontal: -S.lg }}>
+            {FILTERS.map((f) => (
+              <Chip key={f.id} label={`${f.label} ${leads.filter(f.test).length}`} selected={filter === f.id} onPress={() => setFilter(f.id)} />
+            ))}
+          </ScrollView>
+          {leads.length > 6 && (
+            <TextInput value={q} onChangeText={setQ} placeholder="Search by company, city or industry" placeholderTextColor={c.faint} selectionColor={c.text} style={s.search} />
+          )}
+          {shown.length === 0 ? (
+            <Text style={s.body}>Nothing here right now.</Text>
+          ) : (
+            <Box flush>
+              {shown.map((l, i) => (
+                <View key={l.id}>
+                  {i > 0 && <Rule />}
+                  <LeadRow lead={l} />
+                </View>
+              ))}
+            </Box>
+          )}
+          <Text style={s.meta}>The AI only lists companies it found on the web, with the link. Check before you send — you send every message yourself.</Text>
+        </>
       )}
     </Screen>
   );
 }
 
 const useStyles = makeStyles((c) => ({
-  row: { flexDirection: 'row', alignItems: 'center', gap: S.md },
+  row: { flexDirection: 'row', gap: S.sm },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: S.md },
   heading: { ...type.heading, color: c.text },
   strong: { ...type.strong, color: c.text },
   body: { ...type.body, color: c.muted },
   meta: { ...type.meta, color: c.muted },
+  stat: { flex: 1, paddingVertical: 12, paddingHorizontal: S.md, gap: 2 },
+  statDivider: { borderLeftWidth: 1, borderLeftColor: c.rule },
+  statValue: { ...type.value, fontSize: 22, color: c.text },
+  filters: { gap: S.sm, paddingHorizontal: S.lg },
+  search: {
+    minHeight: 44,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    paddingHorizontal: S.lg,
+    color: c.text,
+    fontSize: 16,
+  },
 }));

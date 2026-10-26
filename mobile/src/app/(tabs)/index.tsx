@@ -6,7 +6,7 @@ import { FindWorkSection } from '@/components/find-work';
 import { MachineRow } from '@/components/machine-card';
 import { Ring } from '@/components/ring';
 import { Box, Button, Link, Rule, Screen, Section, success } from '@/components/ui';
-import { addDays, BOARD_DAYS, bookedShare, freeDays, jobLabel, type MachineView, niceDay, relativeDay, type Status, today, viewAll } from '@/lib/model';
+import { addDays, BOARD_DAYS, bookedShare, followUpDue, freeDays, jobLabel, type MachineView, niceDay, relativeDay, type Status, today, viewAll } from '@/lib/model';
 import { extendJob, finishJob, useData } from '@/lib/store';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
@@ -68,6 +68,7 @@ export default function Today() {
 
   const count = (...st: Status[]) => views.filter((v) => st.includes(v.status)).length;
   const checks = views.filter((v) => v.status === 'check');
+  const followUps = (data.leads ?? []).filter((l) => followUpDue(l, now));
   const idle = count('idle');
   const free = freeDays(views, now);
 
@@ -87,12 +88,22 @@ export default function Today() {
         </Box>
       )}
 
-      {checks.length > 0 && (
+      {(checks.length > 0 || followUps.length > 0) && (
         <>
           <Section title="Needs you" />
           {checks.map((v) => (
             <DoneCheck key={v.machine.id} view={v} />
           ))}
+          {followUps.slice(0, 3).map((l) => (
+            <Box key={l.id} style={s.check}>
+              <View style={{ gap: 2 }}>
+                <Text style={s.question}>Follow up with {l.company}?</Text>
+                <Text style={s.meta}>No reply since you contacted them.</Text>
+              </View>
+              <Button label="Write a follow-up" icon="sparkles-outline" small onPress={() => router.push({ pathname: '/buyer/[id]', params: { id: l.id } })} />
+            </Box>
+          ))}
+          {followUps.length > 3 && <Link label={`${followUps.length - 3} more follow-ups →`} onPress={() => router.navigate('/buyers')} />}
         </>
       )}
 

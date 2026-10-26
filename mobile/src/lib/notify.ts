@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { parseDay } from './model';
 
 /**
- * "Is it done?" reminders. When a job gets a finish date, one local notification is
+ * "Is it done?" and "follow up?" reminders. When a job gets a finish date, one local notification is
  * booked on the phone for 10 AM that day — no server and no daily updating needed.
  */
 
@@ -49,7 +49,22 @@ export async function bookDoneCheck(machineName: string, jobLabel: string, due: 
   }
 }
 
-export async function cancelDoneCheck(id: string | null) {
+/** A nudge on the morning a buyer is due a follow-up. */
+export async function bookFollowUp(company: string, day: string): Promise<string | null> {
+  try {
+    const when = parseDay(day);
+    when.setHours(REMIND_HOUR, 0, 0, 0);
+    if (when.getTime() <= Date.now() || !(await allowed())) return null;
+    return await Notifications.scheduleNotificationAsync({
+      content: { title: `Follow up with ${company}?`, body: 'No reply yet. Aiventre can write a short follow-up for you.' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function cancelReminder(id: string | null) {
   if (!supported || !id) return;
   try {
     await Notifications.cancelScheduledNotificationAsync(id);

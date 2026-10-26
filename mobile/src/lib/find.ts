@@ -43,7 +43,7 @@ export async function findWork(machineId: string) {
       gap: free,
       known: (data.leads ?? []).map((l) => l.company),
     });
-    const added = addLeads(
+    const { added } = addLeads(
       machineId,
       buyers.map((b) => ({
         company: b.company,

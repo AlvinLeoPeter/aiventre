@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 
 import { DEFAULT_REACH, ShopPlace } from '@/components/place';
 import { Box, Button, Chip, Field, Label, Screen } from '@/components/ui';
-import { runTask } from '@/lib/api';
+import { runTask, type SetupResult } from '@/lib/api';
 import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
 import { setAccessCode, usePrefs } from '@/lib/prefs';
@@ -14,16 +14,6 @@ import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
 
 type Step = 'welcome' | 'describe' | 'shop' | 'machines';
 
-type SetupResult = {
-  shop_name: string;
-  owner_name: string;
-  area: string;
-  city: string;
-  state: string;
-  work: string[];
-  machines: { type: string; count: number; details: string }[];
-  missing: string[];
-};
 
 // A taste of the board on the welcome screen: three machines, their next 14 days.
 const PREVIEW: { name: string; note: string; booked: number; tone: keyof Palette }[] = [
@@ -108,6 +98,13 @@ export default function Onboarding() {
         city: r.city || p.city,
         state: r.state || p.state,
         work: r.work.filter((w) => WORK_TYPES.includes(w)),
+        summary: r.summary || p.summary,
+        phone: r.phone || p.phone,
+        email: r.email || p.email,
+        capabilities: r.capabilities,
+        materials: r.materials,
+        industries: r.industries,
+        certifications: r.certifications,
       }));
       setCounts(Object.fromEntries(r.machines.filter((m) => m.type && m.count > 0).map((m) => [m.type, Math.min(m.count, 99)])));
       setDetails(Object.fromEntries(r.machines.filter((m) => m.details).map((m) => [m.type, m.details])));

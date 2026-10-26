@@ -1,3 +1,4 @@
+import type { Data, Lead } from './model';
 import { getPrefs, setAccessCode } from './prefs';
 
 /**
@@ -16,7 +17,7 @@ export class ApiError extends Error {
   }
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+export async function post<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -73,3 +74,57 @@ export type BuyerResult = {
 };
 
 export const requestBuyers = (body: unknown) => post<{ buyers: BuyerResult[]; summary: string }>('/api/find-work', body);
+
+/* ---------------- what the AI is told about the shop and a buyer ---------------- */
+
+
+export const shopForAI = (data: Data) => {
+  const s = data.shop;
+  return {
+    shop_name: s?.name ?? '',
+    owner: s?.owner ?? '',
+    location: [s?.area, s?.city, s?.state].filter(Boolean).join(', '),
+    summary: s?.summary ?? '',
+    phone: s?.phone ?? '',
+    email: s?.email ?? '',
+    kinds_of_work: s?.work ?? [],
+    machines: data.machines.map((m) => `${m.name} (${m.type}${m.details ? `, ${m.details}` : ''})`),
+    capabilities: s?.capabilities ?? [],
+    materials: s?.materials ?? [],
+    industries: s?.industries ?? [],
+    certifications: s?.certifications ?? [],
+    hour_rate: s?.rate ?? null,
+  };
+};
+
+export const buyerForAI = (l: Lead) => ({
+  company: l.company,
+  city: l.city,
+  industry: l.industry,
+  website: l.website,
+  why_fit: l.whyFit,
+  contact_role: l.contactRole,
+  status: l.status,
+  notes: l.notes,
+  recent_history: l.history.slice(-6).map((h) => h.text),
+  last_message_sent: l.message,
+});
+
+/** What the AI reads out of the owner's own description of the shop. */
+export type SetupResult = {
+  shop_name: string;
+  owner_name: string;
+  area: string;
+  city: string;
+  state: string;
+  work: string[];
+  machines: { type: string; count: number; details: string }[];
+  summary: string;
+  phone: string;
+  email: string;
+  capabilities: string[];
+  materials: string[];
+  industries: string[];
+  certifications: string[];
+  missing: string[];
+};
