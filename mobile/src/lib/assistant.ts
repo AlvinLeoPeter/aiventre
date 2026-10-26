@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, buyerForAI, post, shopForAI } from './api';
 import { gap, viewAll } from './model';
 import { addLeads, getData, mergeShop, updateLead } from './store';
+import { checkLeads } from './verify';
 
 /**
  * "Ask Aiventre": the same agent as the website's, driven from the phone. Web search runs
@@ -81,7 +82,7 @@ const TOOLS: Record<string, (input: Record<string, unknown>) => unknown> = {
   },
   save_buyers(i) {
     if (!Array.isArray(i.buyers)) throw new Error('buyers must be a list');
-    const { added, skipped } = addLeads(
+    const { added, skipped, ids } = addLeads(
       '',
       (i.buyers as Record<string, unknown>[]).map((b) => ({
         company: str(b.company),
@@ -94,8 +95,12 @@ const TOOLS: Record<string, (input: Record<string, unknown>) => unknown> = {
         contactRole: str(b.contact_role),
         whyFit: str(b.why_fit),
         sourceUrl: str(b.source_url),
+        gstin: str(b.gstin) || undefined,
+        cin: str(b.cin) || undefined,
       })),
     );
+    // Open their pages in the background so the owner sees what could be confirmed.
+    checkLeads(ids);
     return { added, skipped_duplicates: skipped };
   },
   save_email_draft(i) {

@@ -4,6 +4,7 @@ import { router, Stack } from 'expo-router';
 
 import { Button, Field, Screen } from '@/components/ui';
 import { addLeads, useData } from '@/lib/store';
+import { checkLeads } from '@/lib/verify';
 import { makeStyles, type } from '@/lib/theme';
 
 /** A buyer you already know, added by hand. */
@@ -31,6 +32,7 @@ export default function NewBuyer() {
           const trimmed = Object.fromEntries(Object.entries(f).map(([k, v]) => [k, v.trim()])) as typeof f;
           const { added, ids } = addLeads('', [trimmed]);
           if (!added) return setError(`${trimmed.company} is already on your list${trimmed.company.toLowerCase() === data.shop?.name.toLowerCase() ? ' (that’s your own shop)' : ''}.`);
+          if (trimmed.website) checkLeads(ids);
           router.replace({ pathname: '/buyer/[id]', params: { id: ids[0] } });
         }}
       />

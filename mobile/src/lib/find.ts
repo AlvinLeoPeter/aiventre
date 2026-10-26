@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
 import { requestBuyers } from './api';
-import { addDays, gap, relativeDay, today, viewAll, viewMachine } from './model';
+import { addDays, gap, type Lead, relativeDay, today, viewAll, viewMachine } from './model';
 import { notifyNow } from './notify';
 import { getPrefs, setPrefs } from './prefs';
 import { addLeads, getData } from './store';
@@ -27,6 +27,11 @@ const subscribe = (l: () => void) => {
 };
 export const useSearches = () => useSyncExternalStore(subscribe, () => searches, () => searches);
 
+const host = (url: string) => url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0].toLowerCase();
+
+/** Sites that gave the owner a fake company or a wrong contact. */
+const badSources = (leads: Lead[]) => [...new Set(leads.filter((l) => l.flags?.length && l.sourceUrl).map((l) => host(l.sourceUrl)))];
+
 /** `auto`: started by the app itself, so tell the owner with a notification when buyers turn up. */
 export async function findWork(machineId: string, auto = false) {
   if (searches[machineId]?.state === 'running') return;
@@ -41,11 +46,14 @@ export async function findWork(machineId: string, auto = false) {
   try {
     const free = gap(viewMachine(data, machine));
     if (free) setPrefs({ searched: { ...getPrefs().searched, [machineId]: free.from } });
-    const { buyers, summary } = await requestBuyers({
+    const { buyers, summary, dropped } = await requestBuyers({
       shop: { ...data.shop, machines: data.machines.map((m) => ({ type: m.type, details: m.details })) },
       machine: { name: machine.name, type: machine.type, details: machine.details },
       gap: free,
       known: (data.leads ?? []).map((l) => l.company),
+      // What the owner marked wrong: skip those companies, and distrust the sites they came from.
+      avoid: (data.leads ?? []).filter((l) => l.flags?.length).map((l) => l.company),
+      bad_sources: badSources(data.leads ?? []),
     });
     const { added } = addLeads(
       machineId,
@@ -59,10 +67,15 @@ export async function findWork(machineId: string, auto = false) {
         phone: b.phone,
         email: b.email,
         sourceUrl: b.source_url,
+        state: b.state ?? '',
+        gstin: b.gstin || undefined,
+        cin: b.cin || undefined,
+        checks: b.checks ?? null,
         message: b.message,
       })),
     );
-    put(machineId, { state: 'done', added, summary });
+    const note = dropped ? ` ${dropped} more couldn’t be confirmed (their pages didn’t open), so they were left out.` : '';
+    put(machineId, { state: 'done', added, summary: `${summary}${note}`.trim() });
     if (added && (auto || AppState.currentState !== 'active')) {
       const when = free && free.from > today() ? ` from ${relativeDay(free.from)}` : '';
       notifyNow(

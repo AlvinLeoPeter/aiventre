@@ -1,4 +1,4 @@
-import type { Data, Lead } from './model';
+import type { Checks, Data, Lead } from './model';
 import { getPrefs, setAccessCode } from './prefs';
 
 /**
@@ -70,10 +70,29 @@ export type BuyerResult = {
   phone: string;
   email: string;
   source_url: string;
+  state?: string;
+  gstin?: string;
+  cin?: string;
   message: string;
+  checks?: Checks | null;
 };
 
-export const requestBuyers = (body: unknown) => post<{ buyers: BuyerResult[]; summary: string }>('/api/find-work', body);
+export const requestBuyers = (body: unknown) => post<{ buyers: BuyerResult[]; summary: string; dropped?: number }>('/api/find-work', body);
+
+/** Re-checks buyers that didn't come from Find work (added by hand, saved by the assistant). No AI, no credits. */
+export const requestChecks = (buyers: Lead[]) =>
+  post<{ checks: (Checks | null)[] }>('/api/verify', {
+    buyers: buyers.map((l) => ({
+      company: l.company,
+      website: l.website,
+      source_url: l.sourceUrl,
+      email: l.email,
+      phone: l.phone,
+      state: l.state,
+      gstin: l.gstin,
+      cin: l.cin,
+    })),
+  });
 
 /* ---------------- what the AI is told about the shop and a buyer ---------------- */
 

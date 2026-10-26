@@ -76,6 +76,28 @@ export type Lead = {
   notes: string;
   history: { at: string; text: string }[];
   foundAt: string; // day
+  gstin?: string;
+  cin?: string;
+  checks?: Checks | null; // what the server could confirm about them
+  flags?: Flag[]; // what the owner found wrong
+};
+
+/** What the server confirmed by opening the company's pages (see server/verify.js). */
+export type Checks = {
+  at: string;
+  link: 'ok' | 'no_mention' | 'broken' | 'none';
+  website: 'ok' | 'down' | 'none';
+  email: 'official' | 'free' | 'other' | 'none';
+  phone: 'on_site' | 'not_found' | 'none';
+  registration: { kind: 'GSTIN' | 'CIN'; id: string; state?: string; onSite?: boolean; stateMatches?: boolean; invalid?: boolean } | null;
+  passed: number; // 0–3: link, contact, registration
+};
+
+export type Flag = 'wrong_number' | 'wrong_email' | 'fake';
+export const FLAG_LABEL: Record<Flag, string> = {
+  wrong_number: 'Wrong number',
+  wrong_email: 'Wrong email',
+  fake: 'Closed or not real',
 };
 
 export const LEAD_STATUS: Record<LeadStatus, { label: string; tone: Status }> = {

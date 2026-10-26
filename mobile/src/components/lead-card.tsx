@@ -5,6 +5,7 @@ import { followUpDue, type Lead, LEAD_STATUS } from '@/lib/model';
 import { useData } from '@/lib/store';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
+import { TrustPill } from './trust';
 import { Press, StatusPill } from './ui';
 
 /** Indian numbers as WhatsApp wants them (91 + 10 digits), only when it looks like a mobile. */
@@ -43,6 +44,7 @@ export function LeadRow({ lead }: { lead: Lead }) {
         <StatusPill status={due ? 'check' : LEAD_STATUS[lead.status].tone} text={due ? 'Follow up' : LEAD_STATUS[lead.status].label} />
       </View>
       {!!where && <Text style={s.meta}>{where}</Text>}
+      <TrustPill lead={lead} />
       {!!lead.whyFit && (
         <Text style={s.body} numberOfLines={2}>
           {lead.whyFit}

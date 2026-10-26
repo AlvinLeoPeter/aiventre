@@ -90,6 +90,8 @@ const TOOLS = [
               contact_role: { type: 'string', description: 'e.g. Purchase department. No personal names unless publicly listed in that role.' },
               why_fit: { type: 'string', description: 'One sentence: why this company might buy from this shop.' },
               source_url: { type: 'string', description: 'Where you found this company.' },
+              gstin: { type: 'string', description: 'GSTIN exactly as printed on a page you read. Never guess.' },
+              cin: { type: 'string', description: 'CIN exactly as printed on a page you read. Never guess.' },
             },
             required: ['company', 'why_fit', 'source_url'],
           },
