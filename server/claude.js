@@ -5,11 +5,20 @@ import Anthropic from '@anthropic-ai/sdk'
    never reaches the browser.
 ---------------------------------------------------------------- */
 
-export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-5'
+// Which model does which job. The hard jobs (researching buyers, reading drawings)
+// get Opus; the simple ones (profile, emails, replies) get the cheaper, faster Sonnet.
+// Each can be changed in Vercel without touching code; ANTHROPIC_MODEL sets them all.
+const ALL = process.env.ANTHROPIC_MODEL
+export const MODELS = {
+  agent: process.env.ANTHROPIC_MODEL_AGENT || ALL || 'claude-opus-5',
+  quote: process.env.ANTHROPIC_MODEL_QUOTE || ALL || 'claude-opus-5',
+  simple: process.env.ANTHROPIC_MODEL_SIMPLE || ALL || 'claude-sonnet-5',
+}
 
-// Server-side refusal fallback: if the model declines, the API re-runs the
-// request on a fallback model inside the same call.
-const FALLBACK = { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' }
+// Server-side refusal fallback for Opus/Fable: if the model declines, the API re-runs
+// the request on a fallback model inside the same call.
+const withFallback = (model) =>
+  /^claude-(opus|fable)/.test(model) ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}
 
 // Server tools (web search / fetch) can pause a long turn; resume a few times.
 const MAX_CONTINUATIONS = 4
@@ -47,7 +56,7 @@ export async function runTurn(params) {
   let message
   for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
     message = await getClient()
-      .beta.messages.stream({ model: MODEL, ...FALLBACK, ...params, messages })
+      .beta.messages.stream({ model: MODELS.agent, ...withFallback(MODELS.agent), ...params, messages })
       .finalMessage()
     if (message.stop_reason !== 'pause_turn') break
     messages.push({ role: 'assistant', content: message.content })
@@ -58,11 +67,11 @@ export async function runTurn(params) {
 }
 
 /** One structured call: returns JSON matching `schema`. */
-export async function runStructured({ system, content, schema, effort = 'medium', maxTokens = 16000 }) {
+export async function runStructured({ system, content, schema, effort = 'medium', maxTokens = 16000, model = MODELS.simple }) {
   const message = await getClient()
     .beta.messages.stream({
-      model: MODEL,
-      ...FALLBACK,
+      model,
+      ...withFallback(model),
       max_tokens: maxTokens,
       system,
       output_config: { effort, format: { type: 'json_schema', schema } },

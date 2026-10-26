@@ -1,4 +1,4 @@
-import { handler, HttpError, runStructured } from '../server/claude.js'
+import { handler, HttpError, MODELS, runStructured } from '../server/claude.js'
 
 /* ----------------------------------------------------------------
    POST /api/task  { task, input }  ->  JSON
@@ -85,6 +85,7 @@ const TASKS = {
   quote_assist: {
     effort: 'high',
     maxTokens: 32000,
+    model: MODELS.quote,
     schema: obj({
       part_summary: str,
       material: str,
@@ -130,5 +131,5 @@ export default handler(async ({ task, input }) => {
   const spec = TASKS[task]
   if (!spec) throw new HttpError(400, `Unknown task "${task}".`)
   const { system, content } = spec.build(input || {})
-  return runStructured({ system, content, schema: spec.schema, effort: spec.effort, maxTokens: spec.maxTokens })
+  return runStructured({ system, content, schema: spec.schema, effort: spec.effort, maxTokens: spec.maxTokens, model: spec.model })
 })
