@@ -263,7 +263,7 @@ export async function markContacted(id: string, how: string) {
     { status: ['new', 'contacted'].includes(lead.status) ? 'contacted' : lead.status, followUpAt, followUpNotificationId: null },
     `${how} · follow up in ${FOLLOW_UP_DAYS} days`,
   );
-  const notificationId = await bookFollowUp(lead.company, followUpAt);
+  const notificationId = await bookFollowUp(lead.company, followUpAt, id);
   if (notificationId) updateLead(id, { followUpNotificationId: notificationId });
 }
 

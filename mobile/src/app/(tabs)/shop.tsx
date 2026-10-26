@@ -8,13 +8,13 @@ import { runTask, type SetupResult } from '@/lib/api';
 import { confirm } from '@/lib/confirm';
 import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
-import { setAccessCode, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
+import { setAccessCode, setAutoFind, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
 import { pickBackup, shareBackup, shareProfile } from '@/lib/share';
 import { loadDemo, mergeShop, resetAll, updateShop, useData } from '@/lib/store';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const COMING = [
-  'Searches run by themselves every night, with a notification when buyers turn up',
+  'Searches that run overnight even when the app is closed',
   'Login, and your shop synced between phone and laptop',
 ];
 
@@ -210,6 +210,19 @@ export default function ShopScreen() {
           <Button label="Save code" kind="secondary" disabled={!code.trim()} onPress={() => setAccessCode(code)} />
         </Box>
       )}
+      <Label>Find work by itself</Label>
+      <Segmented
+        options={[
+          { value: 'on', label: 'On' },
+          { value: 'off', label: 'Off' },
+        ]}
+        value={prefs.autoFind ? 'on' : 'off'}
+        onChange={(v) => setAutoFind(v === 'on')}
+      />
+      <Text style={[s.meta, { marginTop: -S.sm }]}>
+        When a machine is free or finishing within 3 days, Aiventre searches for buyers as you open the app (at most 3 searches a day) and
+        notifies you.
+      </Text>
 
       <Section title="Backup" />
       <View style={s.row}>

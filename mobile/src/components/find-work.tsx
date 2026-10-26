@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { findWork, useSearches } from '@/lib/find';
+import { usePrefs } from '@/lib/prefs';
 import { gap, type MachineView, relativeDay, today } from '@/lib/model';
 import { useData } from '@/lib/store';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
@@ -34,6 +35,7 @@ function Action({ machineId, first }: { machineId: string; first: boolean }) {
  */
 export function FindWorkSection({ views }: { views: MachineView[] }) {
   const s = useStyles();
+  const autoOn = usePrefs().autoFind;
   const now = today();
   const open = views
     .filter((v) => v.status !== 'maintenance')
@@ -64,7 +66,11 @@ export function FindWorkSection({ views }: { views: MachineView[] }) {
           </View>
         ))}
       </Box>
-      <Text style={[s.meta, { marginTop: -S.sm }]}>The AI finds companies near you that buy this kind of work, with a message ready to send.</Text>
+      <Text style={[s.meta, { marginTop: -S.sm }]}>
+        {autoOn
+          ? 'Machines free within 3 days are searched by themselves when you open the app — you get a notification when buyers turn up.'
+          : 'The AI finds companies near you that buy this kind of work, with a message ready to send.'}
+      </Text>
     </>
   );
 }

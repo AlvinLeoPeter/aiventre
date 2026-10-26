@@ -2,13 +2,20 @@ import { useSyncExternalStore } from 'react';
 import { Appearance, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/** Settings that belong to this phone, not to the shop: look, and the AI access code. */
+/** Settings that belong to this phone, not to the shop: look, AI access code, automatic searching. */
 
 export type ThemePref = 'system' | 'light' | 'dark';
-export type Prefs = { theme: ThemePref; accessCode: string };
+export type Prefs = {
+  theme: ThemePref;
+  accessCode: string;
+  autoFind: boolean;
+  searched: Record<string, string>; // machine id → the free day it was last searched for
+  autoDay: string; // the day of the last automatic searches, and how many ran
+  autoCount: number;
+};
 
 const KEY = 'aiventre:prefs';
-let prefs: Prefs = { theme: 'system', accessCode: '' };
+let prefs: Prefs = { theme: 'system', accessCode: '', autoFind: true, searched: {}, autoDay: '', autoCount: 0 };
 const listeners = new Set<() => void>();
 
 // Tell the phone too, so keyboards, alerts and pickers match the app.
@@ -16,7 +23,7 @@ const applyTheme = (theme: ThemePref) => {
   if (Platform.OS !== 'web') Appearance.setColorScheme(theme === 'system' ? 'unspecified' : theme);
 };
 
-function set(next: Partial<Prefs>) {
+export function setPrefs(next: Partial<Prefs>) {
   prefs = { ...prefs, ...next };
   listeners.forEach((l) => l());
   AsyncStorage.setItem(KEY, JSON.stringify(prefs)).catch(() => {});
@@ -42,8 +49,9 @@ export const usePrefs = () => useSyncExternalStore(subscribe, () => prefs, () =>
 export const getPrefs = () => prefs;
 
 export function setTheme(theme: ThemePref) {
-  set({ theme });
+  setPrefs({ theme });
   applyTheme(theme);
 }
 
-export const setAccessCode = (accessCode: string) => set({ accessCode: accessCode.trim() });
+export const setAccessCode = (accessCode: string) => setPrefs({ accessCode: accessCode.trim() });
+export const setAutoFind = (autoFind: boolean) => setPrefs({ autoFind });

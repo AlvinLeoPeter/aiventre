@@ -16,6 +16,9 @@ machine goes idle. Built with Expo (React Native, SDK 58), one codebase for Andr
 - **Find work** — Today lists every machine with free days in the next two weeks. "Find work" sends the
   machine, the shop's work, location and delivery distance to the server, where the AI searches the web for
   real nearby companies that buy that work (1–3 minutes) and writes a first message for each.
+  It also runs by itself: when the app opens, machines free now or within 3 days that haven't been searched
+  for this free spell get searched (at most 3 a day; My shop → AI to turn off), and a notification says
+  how many buyers turned up — tapping it opens Buyers.
 - **Buyers** — To do / Contacted / Talking / Won-or-not-now, search, add a buyer by hand. Each buyer has the
   message (AI writes or rewrites it, and follow-ups), WhatsApp / Email / Call, "did you send it?", a follow-up
   reminder 4 days later, status, contacts, notes, history and the link where the AI found them.

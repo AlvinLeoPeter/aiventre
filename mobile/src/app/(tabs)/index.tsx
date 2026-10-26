@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -7,6 +8,7 @@ import { MachineRow } from '@/components/machine-card';
 import { Ring } from '@/components/ring';
 import { Box, Button, Link, Rule, Screen, Section, success } from '@/components/ui';
 import { addDays, BOARD_DAYS, bookedShare, followUpDue, freeDays, jobLabel, type MachineView, niceDay, relativeDay, type Status, today, viewAll } from '@/lib/model';
+import { autoFind } from '@/lib/find';
 import { extendJob, finishJob, useData } from '@/lib/store';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
@@ -64,6 +66,11 @@ export default function Today() {
   const s = useStyles();
   const data = useData();
   const now = today();
+
+  // Right after setup (or loading the sample shop), start looking for work for free machines.
+  useEffect(() => {
+    autoFind();
+  }, []);
   const views = viewAll(data, now).sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
 
   const count = (...st: Status[]) => views.filter((v) => st.includes(v.status)).length;
