@@ -3,7 +3,7 @@
 The phone app for job-work shops: every machine at a glance, and (next) the AI finding the next job before a
 machine goes idle. Built with Expo (React Native, SDK 58), one codebase for Android and iPhone.
 
-## What's in v0.2
+## What's in v0.3
 
 - **Today** — one-glance board: running / free soon / idle counts, "Is it done?" questions with one-tap
   Done / +1 day / +2 days, every machine sorted by urgency, and the free gaps coming in the next 14 days.
@@ -13,11 +13,18 @@ machine goes idle. Built with Expo (React Native, SDK 58), one codebase for Andr
 - **Job editor** — "How long will it take?" chips; shows exactly when it starts and finishes.
 - **Reminders** — the owner says how long a job takes once; the phone asks "Is it done?" at 10 AM on the
   finish day. No daily updating.
+- **Find work** — Today lists every machine with free days in the next two weeks. "Find work" sends the
+  machine, the shop's work, location and delivery distance to the server, where the AI searches the web for
+  real nearby companies that buy that work (1–3 minutes) and writes a first message for each. They land in
+  **Buyers** with WhatsApp / Email / Call buttons and the link where each was found; nothing is sent
+  without the owner's tap.
 - **Quote** — photograph a drawing (or pick a photo / PDF); the AI estimates operations, minutes per part and
   setup; you set the hour rate, material and margin and the price updates as you type. Share it on WhatsApp.
   Needs the same access code as the website, asked once.
 - **Look** — light, dark, or follow the phone (My shop → Look).
-- **Setup** — shop, kind of work, machines (tap a type once per machine). "Try a sample shop" for demos.
+- **Setup** — describe the shop in one paragraph (or dictate it) and the AI fills in the rest to check; or fill
+  it in by hand. Location from GPS, delivery distance, machines suggested from the kinds of work.
+  "Try a sample shop" for demos.
 
 Data is stored on the phone for now. Login, sync and the AI lead hunting come next.
 
@@ -64,11 +71,12 @@ npx expo export --platform web   # web build, used for screenshot testing
 ## Code map
 
 - `src/app/` — screens (Expo Router: every file is a screen)
-  - `(tabs)/index.tsx` Today · `(tabs)/machines.tsx` · `(tabs)/quote.tsx` · `(tabs)/shop.tsx`
+  - `(tabs)/index.tsx` Today · `(tabs)/machines.tsx` · `(tabs)/buyers.tsx` · `(tabs)/quote.tsx` · `(tabs)/shop.tsx`
   - `machine/[id].tsx` machine page · `job.tsx` job editor · `onboarding.tsx` setup
 - `src/lib/model.ts` — data types and the rules that turn dates into statuses
 - `src/lib/store.ts` — saved data + actions (add job, job done, +1 day, …)
 - `src/lib/notify.ts` — "Is it done?" reminders
 - `src/lib/theme.ts` — light and dark colours, type sizes; `src/lib/prefs.ts` — look and access code
 - `src/lib/api.ts` — calls to the Aiventre server; `src/lib/drawing.ts` — camera / photo / PDF picking
+- `src/lib/find.ts` — runs "Find work" searches; `src/lib/location.ts` — shop location from GPS
 - `src/components/` — shared UI pieces and the machine card

@@ -42,7 +42,16 @@ export function demoData(): Data {
 
   return {
     version: 1,
-    shop: { name: 'Sharma Precision', owner: 'Rajesh', city: 'Chakan, Pune', work: ['CNC / VMC machining', 'CNC turning'] },
+    shop: {
+      name: 'Sharma Precision',
+      owner: 'Rajesh',
+      area: 'Chakan MIDC',
+      city: 'Pune',
+      state: 'Maharashtra',
+      pincode: '410501',
+      reach: 100,
+      work: ['CNC / VMC machining', 'CNC turning'],
+    },
     machines: [
       { id: 'm1', name: 'VMC 1', type: 'VMC', details: 'Haas · 850 mm travel', maintenance: false },
       { id: 'm2', name: 'VMC 2', type: 'VMC', details: 'BFW · 850 mm travel', maintenance: false },

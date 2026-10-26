@@ -56,3 +56,20 @@ export type QuoteEstimate = {
 };
 
 export type Drawing = { name: string; mediaType: string; data: string };
+
+/* ---------------- find work for a free machine ---------------- */
+
+export type BuyerResult = {
+  company: string;
+  city: string;
+  distance_km: number;
+  industry: string;
+  why_fit: string;
+  website: string;
+  phone: string;
+  email: string;
+  source_url: string;
+  message: string;
+};
+
+export const requestBuyers = (body: unknown) => post<{ buyers: BuyerResult[]; summary: string }>('/api/find-work', body);

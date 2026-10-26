@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 import { router } from 'expo-router';
 
+import { FindWorkSection } from '@/components/find-work';
 import { MachineRow } from '@/components/machine-card';
 import { Ring } from '@/components/ring';
 import { Box, Button, Link, Rule, Screen, Section, success } from '@/components/ui';
@@ -95,6 +96,8 @@ export default function Today() {
         </>
       )}
 
+      <FindWorkSection views={views} />
+
       <Section title="Machines" right={<Link label="+ Add job" onPress={() => router.push('/job')} />} />
       {views.length === 0 ? (
         <Box>
@@ -121,7 +124,7 @@ export default function Today() {
           <View style={[s.key, { backgroundColor: c.booked }]} />
           <Text style={s.meta}>Booked</Text>
           <View style={[s.key, { backgroundColor: c.free, marginLeft: S.md }]} />
-          <Text style={s.meta}>Free — the AI will look for work here</Text>
+          <Text style={s.meta}>Free — days to fill</Text>
         </View>
       )}
     </Screen>

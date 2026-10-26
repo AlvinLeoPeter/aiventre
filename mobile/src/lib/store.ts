@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { demoData } from './demo';
-import { addDays, type Data, type Job, jobLabel, type Machine, type Shop, today } from './model';
+import { addDays, type Data, type Job, jobLabel, type Lead, type Machine, type Shop, today } from './model';
 import { bookDoneCheck, cancelDoneCheck } from './notify';
 
 /**
@@ -171,6 +171,27 @@ export function removeJob(id: string) {
   const job = data.jobs.find((j) => j.id === id);
   cancelDoneCheck(job?.notificationId ?? null);
   set({ ...data, jobs: data.jobs.filter((j) => j.id !== id) });
+}
+
+/* ---------------- leads ---------------- */
+
+export type FoundBuyer = Omit<Lead, 'id' | 'machineId' | 'status' | 'foundAt'>;
+
+/** Saves the AI's finds for a machine, skipping companies already on the list. */
+export function addLeads(machineId: string, found: FoundBuyer[]) {
+  const leads = data.leads ?? [];
+  const key = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Never list the shop itself, or a company that's already on the list.
+  const seen = new Set([...leads.map((l) => key(l.company)), key(data.shop?.name ?? '')]);
+  const fresh = found
+    .filter((b) => b.company && !seen.has(key(b.company)))
+    .map((b): Lead => ({ ...b, id: uid(), machineId, status: 'new', foundAt: today() }));
+  set({ ...data, leads: [...fresh, ...leads] });
+  return fresh.length;
+}
+
+export function updateLead(id: string, patch: Partial<Pick<Lead, 'status'>>) {
+  set({ ...data, leads: (data.leads ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) });
 }
 
 /* ---------------- demo & reset ---------------- */

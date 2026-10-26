@@ -43,11 +43,30 @@ export type Shop = {
   reach?: number; // how far they'll send parts, in km; 0 = anywhere in India
 };
 
+/** A company the AI found that might send work, with a first message ready to send. */
+export type Lead = {
+  id: string;
+  machineId: string; // the machine it was found for
+  company: string;
+  city: string;
+  distanceKm: number; // rough; 0 = unknown
+  industry: string;
+  whyFit: string;
+  website: string;
+  phone: string;
+  email: string;
+  sourceUrl: string;
+  message: string;
+  status: 'new' | 'contacted' | 'not_fit';
+  foundAt: string; // day
+};
+
 export type Data = {
   version: 1;
   shop: Shop | null; // null until onboarding is done
   machines: Machine[];
   jobs: Job[];
+  leads?: Lead[]; // added after v0.2; missing in older saves
 };
 
 export const FREE_SOON_DAYS = 2;
@@ -187,3 +206,10 @@ export const STATUS_LABEL: Record<Status, string> = {
 };
 
 export const jobLabel = (j: Job) => `${j.title}${j.qty ? ` ×${j.qty}` : ''}`;
+
+/** The first day in the next two weeks a machine has nothing booked, and how many free days it has. */
+export function gap(v: MachineView, now = today()) {
+  const free = slots(v, now);
+  const first = free.indexOf('free');
+  return first < 0 ? null : { from: addDays(now, first), days: free.filter((x) => x === 'free').length };
+}

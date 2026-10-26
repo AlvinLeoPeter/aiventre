@@ -11,8 +11,7 @@ import { loadDemo, resetAll, updateShop, useData } from '@/lib/store';
 import { makeStyles, S, type } from '@/lib/theme';
 
 const COMING = [
-  'The AI finds buyers for each free gap, weeks before it starts',
-  'Emails drafted for you to approve and send',
+  'Searches run by themselves every night, with a notification when buyers turn up',
   'Quotes saved with each buyer, so you can follow up',
   'Login, and your shop synced between phone and laptop',
 ];
@@ -30,6 +29,7 @@ export default function ShopScreen() {
   const shop = data.shop!;
   const [form, setForm] = useState(shop);
   const [saved, setSaved] = useState(false);
+  const [code, setCode] = useState('');
   const changed = JSON.stringify(form) !== JSON.stringify(shop);
 
   const toggleWork = (w: string) =>
@@ -63,14 +63,17 @@ export default function ShopScreen() {
       <Section title="Look" />
       <Segmented options={THEMES} value={prefs.theme} onChange={setTheme} />
 
-      {!!prefs.accessCode && (
-        <>
-          <Section title="AI" />
-          <Box style={s.between}>
-            <Text style={s.body}>Access code saved on this phone</Text>
-            <Link label="Change" onPress={() => setAccessCode('')} />
-          </Box>
-        </>
+      <Section title="AI" />
+      {prefs.accessCode ? (
+        <Box style={s.between}>
+          <Text style={s.body}>Access code saved on this phone</Text>
+          <Link label="Change" onPress={() => setAccessCode('')} />
+        </Box>
+      ) : (
+        <Box>
+          <Field label="Access code" value={code} onChangeText={setCode} autoCapitalize="none" autoCorrect={false} secureTextEntry />
+          <Button label="Save code" kind="secondary" disabled={!code.trim()} onPress={() => setAccessCode(code)} />
+        </Box>
       )}
 
       <Section title="Coming next" />
