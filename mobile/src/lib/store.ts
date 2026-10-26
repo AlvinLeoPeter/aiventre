@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { demoData } from './demo';
-import { addDays, type Data, FOLLOW_UP_DAYS, type Job, jobLabel, type Lead, type Machine, type Shop, today } from './model';
+import { addDays, type Data, type Flag, FOLLOW_UP_DAYS, type Job, jobLabel, type Lead, type Machine, type Shop, today } from './model';
 import { bookDoneCheck, bookFollowUp, cancelReminder } from './notify';
 
 /**
@@ -219,6 +219,10 @@ function normalizeLead(l: Partial<Lead> & { company: string }): Lead {
     notes: l.notes ?? '',
     history: l.history ?? [{ at: stamp(), text: l.sourceUrl ? 'Found by the AI' : 'Added' }],
     foundAt: l.foundAt ?? today(),
+    gstin: l.gstin,
+    cin: l.cin,
+    checks: l.checks ?? null,
+    flags: l.flags ?? [],
   };
 }
 
@@ -279,6 +283,21 @@ export function removeLead(id: string) {
   const lead = data.leads?.find((l) => l.id === id);
   cancelReminder(lead?.followUpNotificationId ?? null);
   set({ ...data, leads: (data.leads ?? []).filter((l) => l.id !== id) });
+}
+
+/** The owner says something about this buyer is wrong. A fake company also leaves the active list. */
+export function flagLead(id: string, flag: Flag, label: string) {
+  const lead = data.leads?.find((l) => l.id === id);
+  if (!lead) return;
+  const flags = lead.flags?.includes(flag) ? lead.flags.filter((f) => f !== flag) : [...(lead.flags ?? []), flag];
+  updateLead(id, { flags }, flags.includes(flag) ? `Marked: ${label}` : `Unmarked: ${label}`);
+  if (flag === 'fake' && flags.includes('fake')) setLeadStatus(id, 'lost', 'Not now');
+}
+
+/** Saves what the server confirmed about some buyers. */
+export function saveChecks(results: { id: string; checks: Lead['checks'] }[]) {
+  const byId = new Map(results.map((r) => [r.id, r.checks]));
+  set({ ...data, leads: (data.leads ?? []).map((l) => (byId.has(l.id) ? { ...l, checks: byId.get(l.id) } : l)) });
 }
 
 /* ---------------- backup ---------------- */

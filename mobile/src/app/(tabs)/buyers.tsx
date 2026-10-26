@@ -41,7 +41,8 @@ export default function BuyersScreen() {
   const shown = leads
     .filter(FILTERS.find((f) => f.id === filter)!.test)
     .filter((l) => !needle || [l.company, l.city, l.industry].join(' ').toLowerCase().includes(needle))
-    .sort((a, b) => Number(followUpDue(b)) - Number(followUpDue(a)));
+    // Follow-ups due first, then the buyers we could confirm best.
+    .sort((a, b) => Number(followUpDue(b)) - Number(followUpDue(a)) || (b.checks?.passed ?? -1) - (a.checks?.passed ?? -1));
 
   const activity = Object.entries(searches).filter(([id]) => data.machines.some((m) => m.id === id));
 

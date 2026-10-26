@@ -5,6 +5,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 
 import { openUrl, telUrl, whatsappNumber } from '@/components/lead-card';
+import { TrustSection } from '@/components/trust';
 import { Box, Button, Chip, Field, Link, Screen, Section, StatusPill, success } from '@/components/ui';
 import { buyerForAI, runTask, shopForAI } from '@/lib/api';
 import { confirm } from '@/lib/confirm';
@@ -85,6 +86,9 @@ export default function BuyerScreen() {
         {!!lead.whyFit && <Text style={s.body}>{lead.whyFit}</Text>}
         {machine && <Text style={s.meta}>Found for {machine.name}’s free days · {relativeDay(lead.foundAt)}</Text>}
       </View>
+
+      <Section title="Can you trust this lead?" />
+      <TrustSection lead={lead} />
 
       {asking && (
         <Box style={{ borderColor: c.text }}>
