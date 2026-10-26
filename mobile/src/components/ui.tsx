@@ -1,5 +1,16 @@
 import type { ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+  type ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,16 +30,25 @@ export const STATUS_COLOR: Record<Status, string> = {
   maintenance: C.maintenance,
 };
 
-/** A scrolling page with safe-area padding (top only — the tab bar handles the bottom). */
+/**
+ * A scrolling page with safe-area padding (top only — the tab bar handles the bottom).
+ * Keeps the field you're typing in visible above the keyboard: on iOS the scroll view
+ * grows by the keyboard's height; on Android the page shrinks to fit above it.
+ * Dragging the page down hides the keyboard.
+ */
 export function Screen({ children, padTop = true }: { children: ReactNode; padTop?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: C.bg }}
-      contentContainerStyle={{ paddingTop: padTop ? insets.top + S.lg : S.lg, paddingHorizontal: S.lg, paddingBottom: S.xxl * 2, gap: S.lg }}
-      keyboardShouldPersistTaps="handled">
-      {children}
-    </ScrollView>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'android' ? 'height' : undefined}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: padTop ? insets.top + S.lg : S.lg, paddingHorizontal: S.lg, paddingBottom: S.xxl * 2, gap: S.lg }}
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled">
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
