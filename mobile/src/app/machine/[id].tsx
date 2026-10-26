@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 
+import { FindWorkButton } from '@/components/find-work';
 import { headline, Ribbon } from '@/components/machine-card';
 import { Box, Button, Field, Link, Progress, Rule, Screen, Section, StatusPill, statusColors, success } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
@@ -81,7 +82,7 @@ export default function MachineScreen() {
           <Text style={s.muted}>
             {status === 'maintenance'
               ? 'Switch maintenance off below when it’s back in action.'
-              : 'Every idle day costs you. Add the next job — soon the AI will find one for you.'}
+              : 'Every idle day costs you. Add the next job, or let the AI find one below.'}
           </Text>
         </Box>
       )}
@@ -126,6 +127,8 @@ export default function MachineScreen() {
         kind={current ? 'secondary' : 'primary'}
         onPress={() => router.push({ pathname: '/job', params: { machineId: machine.id } })}
       />
+
+      <FindWorkButton view={view} />
 
       <Section title="Machine" />
       <Box style={{ gap: S.lg }}>

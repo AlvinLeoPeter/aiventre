@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { MachineRow } from '@/components/machine-card';
 import { Box, Button, Chip, Field, Label, Rule, Screen } from '@/components/ui';
-import { MACHINE_TYPES } from '@/lib/demo';
+import { machineTypesFor } from '@/lib/demo';
 import { viewAll } from '@/lib/model';
 import { addMachine, useData } from '@/lib/store';
 import { makeStyles, S, type } from '@/lib/theme';
@@ -33,11 +33,11 @@ export default function Machines() {
           <Text style={s.heading}>Add a machine</Text>
           <Label>Tap a type once for each machine</Label>
           <View style={s.chips}>
-            {MACHINE_TYPES.map((t) => (
+            {machineTypesFor(data.shop?.work ?? []).map((t) => (
               <Chip key={t} label={t} onPress={() => addMachine(t)} />
             ))}
           </View>
-          <Field label="Something else?" value={custom} onChangeText={setCustom} placeholder="e.g. Wire EDM" />
+          <Field label="Something else?" value={custom} onChangeText={setCustom} placeholder="e.g. Honing machine" />
           <View style={s.row}>
             <Button
               label="Add"

@@ -34,13 +34,68 @@ export type Shop = {
   city: string;
   work: string[]; // kinds of job work
   rate?: number; // usual machine hour rate in ₹, for quotes
+  // Where the shop is — the AI looks for buyers near here first.
+  area?: string; // locality or industrial estate, e.g. Chakan MIDC
+  state?: string;
+  pincode?: string;
+  lat?: number;
+  lng?: number;
+  reach?: number; // how far they'll send parts, in km; 0 = anywhere in India
+  // What buyers see in the profile PDF and what the AI uses to pitch the shop.
+  summary?: string;
+  phone?: string;
+  email?: string;
+  capabilities?: string[];
+  materials?: string[];
+  industries?: string[];
+  certifications?: string[];
 };
+
+export type LeadStatus = 'new' | 'contacted' | 'replied' | 'quote_requested' | 'won' | 'lost';
+
+/** A possible buyer: found by the AI (or added by hand), with the conversation so far. */
+export type Lead = {
+  id: string;
+  machineId: string; // the machine it was found for; '' when added by hand or by the assistant
+  company: string;
+  city: string;
+  state: string;
+  distanceKm: number; // rough; 0 = unknown
+  industry: string;
+  whyFit: string;
+  website: string;
+  phone: string;
+  email: string;
+  contactRole: string; // e.g. Purchase department
+  sourceUrl: string;
+  subject: string; // for email
+  message: string; // the next message to send, WhatsApp or email
+  status: LeadStatus;
+  followUpAt: string | null; // day to nudge them if they haven't replied
+  followUpNotificationId: string | null;
+  notes: string;
+  history: { at: string; text: string }[];
+  foundAt: string; // day
+};
+
+export const LEAD_STATUS: Record<LeadStatus, { label: string; tone: Status }> = {
+  new: { label: 'New', tone: 'maintenance' },
+  contacted: { label: 'Contacted', tone: 'soon' },
+  replied: { label: 'Replied', tone: 'running' },
+  quote_requested: { label: 'Wants a quote', tone: 'running' },
+  won: { label: 'Won', tone: 'running' },
+  lost: { label: 'Not now', tone: 'maintenance' },
+};
+
+export const FOLLOW_UP_DAYS = 4;
+export const followUpDue = (l: Lead, now = today()) => l.status === 'contacted' && !!l.followUpAt && l.followUpAt <= now;
 
 export type Data = {
   version: 1;
   shop: Shop | null; // null until onboarding is done
   machines: Machine[];
   jobs: Job[];
+  leads?: Lead[]; // added after v0.2; missing in older saves
 };
 
 export const FREE_SOON_DAYS = 2;
@@ -180,3 +235,10 @@ export const STATUS_LABEL: Record<Status, string> = {
 };
 
 export const jobLabel = (j: Job) => `${j.title}${j.qty ? ` ×${j.qty}` : ''}`;
+
+/** The first day in the next two weeks a machine has nothing booked, and how many free days it has. */
+export function gap(v: MachineView, now = today()) {
+  const free = slots(v, now);
+  const first = free.indexOf('free');
+  return first < 0 ? null : { from: addDays(now, first), days: free.filter((x) => x === 'free').length };
+}

@@ -5,6 +5,7 @@ import { handler, HttpError, MODELS, runStructured } from '../server/claude.js'
 
    Single-step AI jobs with a fixed output shape:
    - extract_profile: owner's free-text description -> structured shop profile
+   - setup_shop:      the same, shaped for the phone app's first-run setup
    - draft_email:     shop profile + buyer -> outreach or follow-up email
    - triage_reply:    a buyer's reply -> what it means + next step
    - quote_assist:    drawing + notes -> machining estimate (owner decides price)
@@ -45,6 +46,38 @@ const TASKS = {
       return {
         system: `${SHOP_VOICE} Turn the owner's description of their shop into a clean profile. Use empty strings or empty lists for anything not mentioned — do not guess. Normalise machine names (e.g. "vmc 850" -> type "VMC", model "850"). Write the summary as one or two sentences a purchase manager would find useful. In "missing", list the most useful details still missing (e.g. max part size, tolerances, quality certifications, monthly capacity).`,
         content: text.slice(0, 20000),
+      }
+    },
+  },
+
+  setup_shop: {
+    effort: 'low',
+    schema: obj({
+      shop_name: str,
+      owner_name: str,
+      area: { ...str, description: 'Locality or industrial estate, e.g. "Chakan MIDC Phase 2".' },
+      city: str,
+      state: str,
+      work: { ...strList, description: 'Kinds of work, using the exact wording from work_options.' },
+      machines: {
+        type: 'array',
+        items: obj({ type: str, count: { type: 'integer' }, details: str }),
+      },
+      summary: { ...str, description: 'One or two sentences a purchase manager would find useful.' },
+      phone: str,
+      email: str,
+      capabilities: { ...strList, description: 'e.g. 3-axis milling, turning, tapping' },
+      materials: { ...strList, description: 'e.g. EN8, aluminium, SS304' },
+      industries: { ...strList, description: 'Industries they serve, e.g. tractor parts, pumps' },
+      certifications: { ...strList, description: 'e.g. ISO 9001:2015. Only if stated.' },
+      missing: { ...strList, description: 'Useful setup details the owner did not mention, as short questions.' },
+    }),
+    build: ({ text, work_options = [], machine_options = [] }) => {
+      if (!text?.trim()) throw new HttpError(400, 'Tell us about your shop first.')
+      const options = (list) => (Array.isArray(list) ? list.slice(0, 80).map((x) => String(x).slice(0, 60)) : [])
+      return {
+        system: `${SHOP_VOICE} The owner described their shop in their own words, maybe dictated, maybe mixing Hindi and English. Fill in the app's setup from it. Use empty strings or empty lists for anything not mentioned — never guess a name or place. For "work", pick from work_options only. For machines, give one entry per machine type with how many they have; use the wording from machine_options when one fits (e.g. "vmc" -> "VMC"), otherwise a short clear name. Put make, model or size in details (e.g. "Haas, 850 mm travel"). Only fill phone, email and certifications if the owner states them. If they give a number of machines without types, leave machines empty and ask in "missing".`,
+        content: JSON.stringify({ description: text.slice(0, 8000), work_options: options(work_options), machine_options: options(machine_options) }),
       }
     },
   },

@@ -11,7 +11,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
+import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,7 +37,8 @@ export const statusColors = (c: Palette, s: Status) =>
     maintenance: { fg: c.off, pill: c.offPill, ink: c.offInk },
   })[s];
 
-const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+// Phones only accept a few named curves as text, so custom curves go through cubicBezier().
+const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**

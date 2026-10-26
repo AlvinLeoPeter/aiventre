@@ -1,0 +1,102 @@
+import { handler, HttpError, runTurn } from '../server/claude.js'
+
+/* ----------------------------------------------------------------
+   POST /api/find-work  { shop, machine, gap, known }  ->  { buyers, summary }
+
+   The phone app's "Find work": a machine has free days coming, so the
+   AI searches the web for real companies near the shop that buy that
+   kind of work, and hands back a short list with a ready-to-send
+   message for each. Runs entirely on the server in one request; the
+   owner sends every message themselves.
+---------------------------------------------------------------- */
+
+const SYSTEM = `You are Aiventre, the sales assistant for a small Indian manufacturing job shop. One of the shop's machines has free days coming up. Find companies that could send work for that machine soon.
+
+How to work:
+- Search the web for companies that buy this kind of work: OEMs, Tier-1/Tier-2 suppliers and manufacturers whose parts need this process. Prefer companies within the shop's delivery distance, closest first. Industry association member lists, industrial-estate (MIDC, SIDCO, GIDC, etc.) directories, trade-show exhibitor lists and company websites are good sources; IndiaMART buy requirements and GeM tenders are worth a look when they fit.
+- Only report real companies you found in sources. Every buyer needs a source_url you actually saw. Use only business contact details published by the company or a business directory (purchase/procurement email, general inbox, office phone, supplier-registration page). Never guess or construct an email address or phone number, and never collect personal data about individuals beyond a publicly listed business role. Leave a field empty rather than invent it.
+- Skip companies in "known", and never list the shop itself.
+- Aim for 4 to 8 good fits rather than many weak ones. Be quick: a few targeted searches, then report.
+- For each buyer write a short first message the owner can send on WhatsApp or email (under 70 words, plain Indian business English, no hype): who they are, the matching capability and machine, that it has capacity from the free date, and one clear ask (send a drawing and quantity for a quote). Sign with the owner's name and shop. No invented facts or certifications.
+- When done, call report_buyers exactly once. If you found little, report what you have and say why in the summary.`
+
+const BUYER = {
+  type: 'object',
+  properties: {
+    company: { type: 'string' },
+    city: { type: 'string' },
+    distance_km: { type: 'integer', description: 'Rough road distance from the shop, from the two cities. 0 if unknown.' },
+    industry: { type: 'string' },
+    why_fit: { type: 'string', description: 'One sentence: what they likely buy that this machine can make.' },
+    website: { type: 'string' },
+    phone: { type: 'string', description: 'Published business phone only, else empty.' },
+    email: { type: 'string', description: 'Published business email only, else empty.' },
+    source_url: { type: 'string', description: 'Where you found this company.' },
+    message: { type: 'string', description: 'Ready-to-send first message.' },
+  },
+  required: ['company', 'city', 'distance_km', 'industry', 'why_fit', 'website', 'phone', 'email', 'source_url', 'message'],
+  additionalProperties: false,
+}
+
+const REPORT = {
+  name: 'report_buyers',
+  description: 'Hands the buyer list to the owner. Call once, at the end.',
+  strict: true,
+  input_schema: {
+    type: 'object',
+    properties: {
+      buyers: { type: 'array', items: BUYER },
+      summary: { type: 'string', description: 'One or two plain sentences for the owner: what you looked for and what to do next.' },
+    },
+    required: ['buyers', 'summary'],
+    additionalProperties: false,
+  },
+}
+
+const str = (v, max = 200) => (typeof v === 'string' ? v.slice(0, max) : '')
+
+export default handler(async ({ shop, machine, gap, known = [] }) => {
+  if (!shop?.name || !machine?.type) throw new HttpError(400, 'Set up the shop and pick a machine first.')
+
+  const place = [shop.area, shop.city, shop.state].map((x) => str(x, 80)).filter(Boolean).join(', ')
+  const search = {
+    type: 'web_search_20260209',
+    name: 'web_search',
+    max_uses: 6,
+    user_location: { type: 'approximate', country: 'IN', timezone: 'Asia/Kolkata', ...(shop.city && { city: str(shop.city, 60) }), ...(shop.state && { region: str(shop.state, 60) }) },
+  }
+  const brief = {
+    shop: {
+      name: str(shop.name),
+      owner: str(shop.owner),
+      location: place,
+      pincode: str(shop.pincode, 10),
+      delivery_distance_km: Number(shop.reach) > 0 ? Number(shop.reach) : 'anywhere in India',
+      kinds_of_work: Array.isArray(shop.work) ? shop.work.slice(0, 20).map((w) => str(w, 60)) : [],
+      all_machines: Array.isArray(shop.machines) ? shop.machines.slice(0, 40).map((m) => `${str(m.type, 60)}${m.details ? ` (${str(m.details, 100)})` : ''}`) : [],
+    },
+    machine_with_free_days: { type: str(machine.type, 60), name: str(machine.name, 60), details: str(machine.details) },
+    free_from: str(gap?.from, 20),
+    free_days_in_next_two_weeks: Number(gap?.days) || null,
+    known: Array.isArray(known) ? known.slice(0, 100).map((k) => str(k, 100)) : [],
+  }
+
+  const messages = [{ role: 'user', content: JSON.stringify(brief) }]
+  // Research, then the report. If the model stops without reporting, ask once more.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const turn = await runTurn({
+      max_tokens: 32000,
+      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
+      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 }, REPORT],
+      messages,
+    })
+    const report = turn.content.find((b) => b.type === 'tool_use' && b.name === 'report_buyers')
+    if (report) return { buyers: report.input.buyers ?? [], summary: report.input.summary ?? '' }
+    if (turn.stop_reason === 'refusal') throw new HttpError(422, 'The AI declined this search.')
+    messages.push({ role: 'assistant', content: turn.content })
+    messages.push({ role: 'user', content: 'Now call report_buyers with what you found. An empty list is fine if nothing fits.' })
+  }
+  throw new HttpError(502, 'The search finished without a list. Try again.')
+})
