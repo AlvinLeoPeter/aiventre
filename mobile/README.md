@@ -40,6 +40,19 @@ If the phone can't connect, try `npx expo start --tunnel`.
 
 Note: reminders may need a real build of the app rather than Expo Go to fire reliably.
 
+## Give it to a tester (Android, no Play Store needed)
+
+```sh
+cd mobile
+npx eas-cli@latest login          # same Expo account as Expo Go
+npx eas-cli@latest init           # first time only: links this app to your Expo account
+npx eas-cli@latest build -p android --profile preview
+```
+
+It builds in the cloud (about 10–20 minutes) and gives a link. Open the link on the Android phone, download the
+APK and install it (the phone will ask to allow installs from the browser). Reminders work in this build,
+unlike in Expo Go. For the Play Store later: `npx eas-cli@latest build -p android --profile production`.
+
 ## Checks
 
 ```sh
