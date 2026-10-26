@@ -161,6 +161,12 @@ export function slots(v: MachineView, now = today(), days = BOARD_DAYS): Slot[] 
   });
 }
 
+/** How full the shop is over the next two weeks: booked machine-days out of all available ones. */
+export function bookedShare(views: MachineView[], now = today()) {
+  const all = views.flatMap((v) => slots(v, now)).filter((s) => s !== 'off');
+  return all.length ? all.filter((s) => s !== 'free').length / all.length : 0;
+}
+
 /** Machine-days nobody has booked yet in the next two weeks — what the AI will try to fill. */
 export const freeDays = (views: MachineView[], now = today()) =>
   views.reduce((sum, v) => sum + slots(v, now).filter((s) => s === 'free').length, 0);

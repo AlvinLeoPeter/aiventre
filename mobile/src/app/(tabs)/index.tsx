@@ -3,8 +3,9 @@ import Animated, { FadeOut } from 'react-native-reanimated';
 import { router } from 'expo-router';
 
 import { MachineRow } from '@/components/machine-card';
+import { Ring } from '@/components/ring';
 import { Box, Button, Link, Rule, Screen, Section, success } from '@/components/ui';
-import { addDays, BOARD_DAYS, freeDays, jobLabel, type MachineView, niceDay, relativeDay, type Status, today, viewAll } from '@/lib/model';
+import { addDays, BOARD_DAYS, bookedShare, freeDays, jobLabel, type MachineView, niceDay, relativeDay, type Status, today, viewAll } from '@/lib/model';
 import { extendJob, finishJob, useData } from '@/lib/store';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
@@ -73,11 +74,17 @@ export default function Today() {
     <Screen
       sub={`${greeting()}${data.shop?.owner ? `, ${data.shop.owner}` : ''} · ${niceDay(now)}`}
       title={data.shop?.name}>
-      <Box flush style={s.stats}>
-        <Stat first label="Working" value={count('running', 'soon', 'check')} />
-        <Stat label="Idle now" value={idle} color={idle ? c.idle : undefined} />
-        <Stat label="Free days" value={free} />
-      </Box>
+      {views.length > 0 && (
+        <Box style={s.pulse}>
+          <Ring value={bookedShare(views, now)} label="booked" caption="next 2 weeks" />
+          <View style={{ flex: 1 }}>
+            <Text style={s.pulseTitle}>Your shop</Text>
+            <Stat first label="Working now" value={count('running', 'soon', 'check')} />
+            <Stat label="Idle now" value={idle} color={idle ? c.idle : undefined} />
+            <Stat label="Free days, next 2 wks" value={free} />
+          </View>
+        </Box>
+      )}
 
       {checks.length > 0 && (
         <>
@@ -122,11 +129,12 @@ export default function Today() {
 }
 
 const useStyles = makeStyles((c) => ({
-  stats: { flexDirection: 'row' },
-  stat: { flex: 1, paddingVertical: 14, paddingHorizontal: S.md, gap: 4 },
-  statDivider: { borderLeftWidth: 1, borderLeftColor: c.rule },
+  pulse: { flexDirection: 'row', alignItems: 'center', gap: S.lg },
+  pulseTitle: { ...type.strong, color: c.text, marginBottom: 2 },
+  stat: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 6 },
+  statDivider: { borderTopWidth: 1, borderTopColor: c.rule },
   statLabel: { ...type.meta, color: c.muted },
-  statValue: { ...type.value, color: c.text },
+  statValue: { ...type.strong, fontSize: 17, color: c.text, ...type.num },
   check: { borderColor: c.soon, gap: S.md },
   question: { ...type.strong, fontSize: 16, color: c.text },
   meta: { ...type.meta, color: c.muted },
