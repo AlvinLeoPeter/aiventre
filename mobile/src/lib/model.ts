@@ -33,6 +33,7 @@ export type Shop = {
   owner: string;
   city: string;
   work: string[]; // kinds of job work
+  rate?: number; // usual machine hour rate in ₹, for quotes
 };
 
 export type Data = {

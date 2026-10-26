@@ -35,7 +35,14 @@
           "imageWidth": 96
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Aiventre opens your photos so you can pick a drawing to quote.",
+          "cameraPermission": "Aiventre uses the camera so you can photograph a drawing to quote."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

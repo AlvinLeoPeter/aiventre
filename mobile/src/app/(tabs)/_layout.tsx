@@ -38,6 +38,7 @@ export default function TabLayout() {
       }}>
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: icon('today', 'today-outline') }} />
       <Tabs.Screen name="machines" options={{ title: 'Machines', tabBarIcon: icon('cog', 'cog-outline') }} />
+      <Tabs.Screen name="quote" options={{ title: 'Quote', tabBarIcon: icon('calculator', 'calculator-outline') }} />
       <Tabs.Screen name="shop" options={{ title: 'My shop', tabBarIcon: icon('storefront', 'storefront-outline') }} />
     </Tabs>
   );

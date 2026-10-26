@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { Box, Button, Chip, Field, Label, Rule, Screen, Section, Segmented } from '@/components/ui';
+import { Box, Button, Chip, Field, Label, Link, Rule, Screen, Section, Segmented } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
 import { WORK_TYPES } from '@/lib/demo';
-import { setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
+import { setAccessCode, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
 import { loadDemo, resetAll, updateShop, useData } from '@/lib/store';
 import { makeStyles, S, type } from '@/lib/theme';
 
 const COMING = [
   'The AI finds buyers for each free gap, weeks before it starts',
   'Emails drafted for you to approve and send',
+  'Quotes saved with each buyer, so you can follow up',
   'Login, and your shop synced between phone and laptop',
 ];
 
@@ -61,6 +62,16 @@ export default function ShopScreen() {
       <Section title="Look" />
       <Segmented options={THEMES} value={prefs.theme} onChange={setTheme} />
 
+      {!!prefs.accessCode && (
+        <>
+          <Section title="AI" />
+          <Box style={s.between}>
+            <Text style={s.body}>Access code saved on this phone</Text>
+            <Link label="Change" onPress={() => setAccessCode('')} />
+          </Box>
+        </>
+      )}
+
       <Section title="Coming next" />
       <Box flush>
         {COMING.map((text, i) => (
@@ -101,4 +112,6 @@ export default function ShopScreen() {
 const useStyles = makeStyles((c) => ({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
   item: { ...type.body, color: c.muted, paddingHorizontal: S.lg, paddingVertical: 14 },
+  body: { ...type.body, color: c.muted, flex: 1 },
+  between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 }));
