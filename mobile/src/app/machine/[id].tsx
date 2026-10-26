@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 
-import { headline } from '@/components/machine-card';
-import { Button, Card, Field, Progress, Screen, SectionTitle, STATUS_COLOR, StatusPill } from '@/components/ui';
+import { headline, Ribbon } from '@/components/machine-card';
+import { Box, Button, Field, Link, Progress, Rule, Screen, Section, StatusPill, statusColors, success } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
 import { jobLabel, niceDay, queueSchedule, relativeDay, today, viewMachine } from '@/lib/model';
 import { extendJob, finishJob, removeJob, removeMachine, startJob, updateMachine, useData } from '@/lib/store';
-import { C, S, T } from '@/lib/theme';
+import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
 export default function MachineScreen() {
+  const { c } = useTheme();
+  const s = useStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const data = useData();
   const machine = data.machines.find((m) => m.id === id);
@@ -19,17 +21,17 @@ export default function MachineScreen() {
   if (!machine) {
     return (
       <Screen padTop={false}>
-        <Text style={T.dim}>This machine was removed.</Text>
+        <Text style={s.muted}>This machine was removed.</Text>
       </Screen>
     );
   }
 
   const view = viewMachine(data, machine);
   const { current, queue, status } = view;
-  const color = STATUS_COLOR[status];
+  const col = statusColors(c, status);
   const now = today();
-
   const schedule = queueSchedule(view, now);
+  const editJob = (jobId: string) => router.push({ pathname: '/job', params: { id: jobId } });
 
   return (
     <Screen padTop={false}>
@@ -37,61 +39,87 @@ export default function MachineScreen() {
 
       <View style={{ gap: S.sm }}>
         <StatusPill status={status} />
-        <Text style={[T.hero, { color }]}>{headline(view)}</Text>
-        {!!machine.details && <Text style={T.dim}>{machine.details}</Text>}
+        <Text style={s.big}>{headline(view)}</Text>
+        {!!machine.details && <Text style={s.muted}>{machine.details}</Text>}
+      </View>
+
+      <View style={{ gap: S.sm }}>
+        <Ribbon view={view} dates />
       </View>
 
       {current ? (
-        <Card style={{ gap: S.md, borderColor: color + '55' }}>
-          <SectionTitle right={<Text style={styles.link} onPress={() => router.push({ pathname: '/job', params: { id: current.id } })}>Edit</Text>}>
-            {status === 'check' ? 'Is it done?' : 'Running now'}
-          </SectionTitle>
-          <View style={{ gap: 2 }}>
-            <Text style={T.title}>{jobLabel(current)}</Text>
-            {!!current.customer && <Text style={T.dim}>{current.customer}</Text>}
+        <Box style={status === 'check' && { borderColor: c.soon }}>
+          <View style={s.between}>
+            <Text style={s.label}>{status === 'check' ? 'Is it done?' : 'Running now'}</Text>
+            <Link label="Edit" onPress={() => editJob(current.id)} />
           </View>
-          <Progress value={view.progress} color={color} />
-          <Text style={T.small}>
+          <View style={{ gap: 2 }}>
+            <Text style={s.heading}>{jobLabel(current)}</Text>
+            {!!current.customer && <Text style={s.muted}>{current.customer}</Text>}
+          </View>
+          <Progress value={view.progress} color={col.fg} />
+          <Text style={s.meta}>
             Started {relativeDay(current.start!)} · {current.due! < now ? 'was due' : 'finishes'} {niceDay(current.due!)}
           </Text>
-          <Button label="Job done" icon="checkmark" kind="good" onPress={() => finishJob(current.id)} />
-          <View style={styles.row}>
-            <Button label="+1 day" kind="secondary" flex onPress={() => extendJob(current.id, 1)} />
-            <Button label="+2 days" kind="secondary" flex onPress={() => extendJob(current.id, 2)} />
-            <Button label="+1 week" kind="secondary" flex onPress={() => extendJob(current.id, 7)} />
+          <Button
+            label="Job done"
+            icon="checkmark"
+            onPress={() => {
+              success();
+              finishJob(current.id);
+            }}
+          />
+          <View style={s.row}>
+            <Button label="+1 day" kind="secondary" flex small onPress={() => extendJob(current.id, 1)} />
+            <Button label="+2 days" kind="secondary" flex small onPress={() => extendJob(current.id, 2)} />
+            <Button label="+1 week" kind="secondary" flex small onPress={() => extendJob(current.id, 7)} />
           </View>
-        </Card>
+        </Box>
       ) : (
-        <Card style={{ gap: S.md, borderColor: status === 'idle' ? C.idle + '55' : C.border }}>
-          <Text style={T.title}>{status === 'maintenance' ? 'Under maintenance' : 'Nothing running'}</Text>
-          <Text style={T.dim}>
+        <Box style={status === 'idle' && { borderColor: c.idle }}>
+          <Text style={s.heading}>{status === 'maintenance' ? 'Under maintenance' : 'Nothing running'}</Text>
+          <Text style={s.muted}>
             {status === 'maintenance'
-              ? 'Switch maintenance off below when it is back in action.'
-              : 'Add the next job, or let the AI find one (coming next).'}
+              ? 'Switch maintenance off below when it’s back in action.'
+              : 'Every idle day costs you. Add the next job — soon the AI will find one for you.'}
           </Text>
-        </Card>
+        </Box>
       )}
 
-      <SectionTitle>{`Up next${queue.length ? ` · ${queue.length}` : ''}`}</SectionTitle>
-      {schedule.map(({ job, start, end }) => (
-        <Card key={job.id} style={{ gap: S.sm }}>
-          <Text style={[T.body, { fontWeight: '800' }]}>{jobLabel(job)}</Text>
-          {!!job.customer && <Text style={T.small}>{job.customer}</Text>}
-          <Text style={T.small}>
-            {job.days} day{job.days === 1 ? '' : 's'} · about {niceDay(start)} → {niceDay(end)}
-          </Text>
-          <View style={styles.row}>
-            {!current && <Button label="Start now" kind="primary" flex onPress={() => startJob(job.id)} />}
-            <Button label="Edit" kind="secondary" flex onPress={() => router.push({ pathname: '/job', params: { id: job.id } })} />
-            <Button
-              label="Remove"
-              kind="danger"
-              flex
-              onPress={() => confirm('Remove this job?', jobLabel(job), 'Remove', () => removeJob(job.id))}
-            />
-          </View>
-        </Card>
-      ))}
+      <Section title={queue.length ? `Up next · ${queue.length}` : 'Up next'} />
+      {schedule.length > 0 && (
+        <Box flush>
+          {schedule.map(({ job, start, end }, i) => (
+            <View key={job.id}>
+              {i > 0 && <Rule />}
+              <View style={s.queued}>
+                <View style={s.between}>
+                  <Text style={[s.strong, { flex: 1 }]} numberOfLines={1}>
+                    {jobLabel(job)}
+                  </Text>
+                  <Text style={[s.meta, type.num]}>
+                    {niceDay(start)} → {niceDay(end)}
+                  </Text>
+                </View>
+                <Text style={s.meta}>
+                  {[job.customer, `${job.days} day${job.days === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
+                </Text>
+                <View style={s.row}>
+                  {!current && <Button label="Start now" flex small onPress={() => startJob(job.id)} />}
+                  <Button label="Edit" kind="secondary" flex small onPress={() => editJob(job.id)} />
+                  <Button
+                    label="Remove"
+                    kind="danger"
+                    flex
+                    small
+                    onPress={() => confirm('Remove this job?', jobLabel(job), 'Remove', () => removeJob(job.id))}
+                  />
+                </View>
+              </View>
+            </View>
+          ))}
+        </Box>
+      )}
       <Button
         label="Add a job to this machine"
         icon="add"
@@ -99,8 +127,8 @@ export default function MachineScreen() {
         onPress={() => router.push({ pathname: '/job', params: { machineId: machine.id } })}
       />
 
-      <SectionTitle>Machine</SectionTitle>
-      <Card style={{ gap: S.lg }}>
+      <Section title="Machine" />
+      <Box style={{ gap: S.lg }}>
         <Field label="Name" value={name} onChangeText={setName} onBlur={() => name.trim() && updateMachine(machine.id, { name: name.trim() })} />
         <Field
           label="Details (make, bed size, travel)"
@@ -112,13 +140,13 @@ export default function MachineScreen() {
         <Button
           label={machine.maintenance ? 'Back in action' : 'Mark under maintenance'}
           kind="secondary"
-          icon={machine.maintenance ? 'play' : 'construct'}
+          icon={machine.maintenance ? 'play' : 'construct-outline'}
           onPress={() => updateMachine(machine.id, { maintenance: !machine.maintenance })}
         />
         <Button
           label="Remove machine"
           kind="danger"
-          icon="trash"
+          icon="trash-outline"
           onPress={() =>
             confirm(`Remove ${machine.name}?`, 'Its jobs will be removed too.', 'Remove', () => {
               removeMachine(machine.id);
@@ -126,12 +154,19 @@ export default function MachineScreen() {
             })
           }
         />
-      </Card>
+      </Box>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
+  big: { ...type.title, color: c.text },
+  heading: { ...type.heading, fontSize: 19, color: c.text },
+  strong: { ...type.strong, color: c.text },
+  label: { ...type.label, color: c.muted },
+  muted: { ...type.body, color: c.muted },
+  meta: { ...type.meta, color: c.muted },
   row: { flexDirection: 'row', gap: S.sm },
-  link: { color: C.brand, fontWeight: '800', fontSize: 14 },
-});
+  between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md },
+  queued: { padding: S.lg, gap: S.sm },
+}));

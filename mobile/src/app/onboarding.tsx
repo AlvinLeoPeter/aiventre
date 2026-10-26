@@ -1,16 +1,45 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card, Chip, Field, Screen } from '@/components/ui';
+import { Box, Button, Chip, Field, Label, Screen } from '@/components/ui';
 import { MACHINE_TYPES, WORK_TYPES } from '@/lib/demo';
 import { finishOnboarding, loadDemo } from '@/lib/store';
-import { C, R, S, T } from '@/lib/theme';
+import { makeStyles, type Palette, S, type, useTheme } from '@/lib/theme';
 
 type Step = 'welcome' | 'shop' | 'machines';
 
+// A taste of the board on the welcome screen: three machines, their next 14 days.
+const PREVIEW: { name: string; note: string; booked: number; tone: keyof Palette }[] = [
+  { name: 'VMC 1', note: 'Free in 9 days', booked: 9, tone: 'running' },
+  { name: 'VMC 2', note: 'Free Thursday', booked: 3, tone: 'soon' },
+  { name: 'CNC lathe', note: 'Idle 2 days', booked: 0, tone: 'idle' },
+];
+
+function Preview() {
+  const { c } = useTheme();
+  const s = useStyles();
+  return (
+    <Box flush style={{ paddingVertical: S.sm }}>
+      {PREVIEW.map((m) => (
+        <View key={m.name} style={s.previewRow}>
+          <View style={s.previewTop}>
+            <Text style={s.strong}>{m.name}</Text>
+            <Text style={[s.meta, { color: c[m.tone], fontWeight: '600' }]}>{m.note}</Text>
+          </View>
+          <View style={s.cells}>
+            {Array.from({ length: 14 }, (_, i) => (
+              <View key={i} style={[s.cell, { backgroundColor: i < m.booked ? c.booked : c.free }]} />
+            ))}
+          </View>
+        </View>
+      ))}
+    </Box>
+  );
+}
+
 export default function Onboarding() {
+  const s = useStyles();
   const [step, setStep] = useState<Step>('welcome');
   const [shop, setShop] = useState({ name: '', owner: '', city: '', work: [] as string[] });
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -24,15 +53,11 @@ export default function Onboarding() {
   if (step === 'welcome') {
     return (
       <Screen>
-        <View style={styles.hero}>
-          <View style={styles.logo}>
-            <Ionicons name="pulse" size={36} color="#fff" />
-          </View>
-          <Text style={[T.hero, { fontSize: 38, textAlign: 'center' }]}>Aiventre</Text>
-          <Text style={[T.dim, { fontSize: 17, textAlign: 'center', lineHeight: 24 }]}>
-            Every machine at a glance.{'\n'}Your next job, found before you need it.
-          </Text>
+        <View style={s.hero}>
+          <Text style={s.wordmark}>Aiventre</Text>
+          <Text style={s.tagline}>Every machine at a glance. Your next job, found before a machine goes idle.</Text>
         </View>
+        <Preview />
         <Button label="Set up my shop" icon="arrow-forward" onPress={() => setStep('shop')} />
         <Button
           label="Try a sample shop"
@@ -42,7 +67,7 @@ export default function Onboarding() {
             router.replace('/');
           }}
         />
-        <Text style={[T.small, { textAlign: 'center' }]}>Takes about a minute. Everything stays on your phone.</Text>
+        <Text style={[s.meta, { textAlign: 'center' }]}>Takes about a minute. Everything stays on your phone.</Text>
       </Screen>
     );
   }
@@ -50,36 +75,36 @@ export default function Onboarding() {
   if (step === 'shop') {
     return (
       <Screen>
-        <Text style={T.label}>Step 1 of 2</Text>
-        <Text style={T.hero}>Your shop</Text>
+        <Text style={s.meta}>Step 1 of 2</Text>
+        <Text style={s.title}>Your shop</Text>
         <Field label="Shop name" value={shop.name} onChangeText={(name) => setShop({ ...shop, name })} placeholder="e.g. Sharma Precision" />
         <Field label="Your name" value={shop.owner} onChangeText={(owner) => setShop({ ...shop, owner })} placeholder="e.g. Rajesh" />
         <Field label="City" value={shop.city} onChangeText={(city) => setShop({ ...shop, city })} placeholder="e.g. Chakan, Pune" />
         <View style={{ gap: S.sm }}>
-          <Text style={T.label}>What work do you do?</Text>
-          <View style={styles.chips}>
+          <Label>What work do you do?</Label>
+          <View style={s.chips}>
             {WORK_TYPES.map((w) => (
               <Chip key={w} label={w} selected={shop.work.includes(w)} onPress={() => toggleWork(w)} />
             ))}
           </View>
         </View>
         <Button label="Next: your machines" icon="arrow-forward" disabled={!shop.name.trim()} onPress={() => setStep('machines')} />
-        <Button label="Back" kind="ghost" onPress={() => setStep('welcome')} />
+        <Button label="Back" kind="quiet" onPress={() => setStep('welcome')} />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text style={T.label}>Step 2 of 2</Text>
-      <Text style={T.hero}>Your machines</Text>
-      <Text style={T.dim}>Tap a machine once for each one you have.</Text>
-      <View style={styles.chips}>
+      <Text style={s.meta}>Step 2 of 2</Text>
+      <Text style={s.title}>Your machines</Text>
+      <Text style={s.muted}>Tap a type once for each machine you have.</Text>
+      <View style={s.chips}>
         {[...MACHINE_TYPES, ...Object.keys(counts).filter((k) => !MACHINE_TYPES.includes(k))].map((t) => (
           <Chip key={t} label={t} count={counts[t]} selected={!!counts[t]} onPress={() => bump(t, 1)} />
         ))}
       </View>
-      <View style={styles.row}>
+      <View style={s.row}>
         <View style={{ flex: 1 }}>
           <Field label="Something else?" value={custom} onChangeText={setCustom} placeholder="e.g. Wire EDM" />
         </View>
@@ -97,18 +122,18 @@ export default function Onboarding() {
       </View>
 
       {total > 0 && (
-        <Card style={{ gap: S.sm }}>
+        <Box style={{ gap: S.sm }}>
           {Object.entries(counts)
             .filter(([, n]) => n > 0)
             .map(([type, n]) => (
-              <View key={type} style={styles.countRow}>
-                <Text style={[T.body, { flex: 1, fontWeight: '700' }]}>{type}</Text>
-                <Button label="−" kind="secondary" onPress={() => bump(type, -1)} />
-                <Text style={styles.count}>{n}</Text>
-                <Button label="+" kind="secondary" onPress={() => bump(type, 1)} />
+              <View key={type} style={s.countRow}>
+                <Text style={[s.strong, { flex: 1 }]}>{type}</Text>
+                <Button label="−" kind="secondary" small onPress={() => bump(type, -1)} />
+                <Text style={s.count}>{n}</Text>
+                <Button label="+" kind="secondary" small onPress={() => bump(type, 1)} />
               </View>
             ))}
-        </Card>
+        </Box>
       )}
 
       <Button
@@ -125,16 +150,25 @@ export default function Onboarding() {
           router.replace('/');
         }}
       />
-      <Button label="Back" kind="ghost" onPress={() => setStep('shop')} />
+      <Button label="Back" kind="quiet" onPress={() => setStep('shop')} />
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  hero: { alignItems: 'center', gap: S.md, paddingVertical: S.xxl * 2 },
-  logo: { width: 76, height: 76, borderRadius: R.lg, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+const useStyles = makeStyles((c) => ({
+  hero: { gap: S.md, paddingTop: S.xxl * 2, paddingBottom: S.lg },
+  wordmark: { fontSize: 40, fontWeight: '700', letterSpacing: -1.2, color: c.text },
+  tagline: { fontSize: 19, lineHeight: 26, color: c.muted },
+  title: { ...type.title, color: c.text },
+  strong: { ...type.strong, color: c.text },
+  muted: { ...type.body, color: c.muted },
+  meta: { ...type.meta, color: c.muted },
+  previewRow: { paddingHorizontal: S.lg, paddingVertical: 10, gap: 8 },
+  previewTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  cells: { flexDirection: 'row', gap: 3 },
+  cell: { flex: 1, height: 10, borderRadius: 3 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
   row: { flexDirection: 'row', gap: S.sm },
   countRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
-  count: { color: C.text, fontSize: 18, fontWeight: '800', minWidth: 28, textAlign: 'center' },
-});
+  count: { color: c.text, fontSize: 18, fontWeight: '600', minWidth: 28, textAlign: 'center', ...type.num },
+}));

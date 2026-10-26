@@ -1,23 +1,20 @@
 import { useEffect } from 'react';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
+import { loadPrefs } from '@/lib/prefs';
 import { loadData, useReady } from '@/lib/store';
-import { C } from '@/lib/theme';
+import { useTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 
-const theme = {
-  ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, text: C.text, border: C.border, primary: C.brand },
-};
-
 export default function RootLayout() {
   const ready = useReady();
+  const { c, scheme } = useTheme();
 
   useEffect(() => {
-    loadData();
+    loadPrefs().then(loadData);
   }, []);
 
   useEffect(() => {
@@ -26,15 +23,21 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...base,
+    colors: { ...base.colors, background: c.ground, card: c.ground, text: c.text, border: c.border, primary: c.text },
+  };
+
   return (
-    <ThemeProvider value={theme}>
-      <StatusBar style="light" />
+    <ThemeProvider value={navTheme}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: C.bg },
-          headerTintColor: C.text,
+          headerStyle: { backgroundColor: c.ground },
+          headerTintColor: c.text,
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: C.bg },
+          contentStyle: { backgroundColor: c.ground },
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />

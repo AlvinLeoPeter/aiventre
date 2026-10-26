@@ -148,10 +148,26 @@ export function queueSchedule(v: MachineView, now = today()) {
 
 export const viewAll = (data: Data, now = today()) => data.machines.map((m) => viewMachine(data, m, now));
 
+export const BOARD_DAYS = 14;
+export type Slot = 'booked' | 'check' | 'free' | 'off';
+
+/** The machine's next two weeks, one slot per day starting today. Free slots are the gaps to sell. */
+export function slots(v: MachineView, now = today(), days = BOARD_DAYS): Slot[] {
+  return Array.from({ length: days }, (_, i) => {
+    if (v.status === 'maintenance') return 'off';
+    if (i === 0 && v.status === 'check') return 'check';
+    return addDays(now, i) < v.freeFrom ? 'booked' : 'free';
+  });
+}
+
+/** Machine-days nobody has booked yet in the next two weeks — what the AI will try to fill. */
+export const freeDays = (views: MachineView[], now = today()) =>
+  views.reduce((sum, v) => sum + slots(v, now).filter((s) => s === 'free').length, 0);
+
 export const STATUS_LABEL: Record<Status, string> = {
   running: 'Running',
   soon: 'Free soon',
-  check: 'Done?',
+  check: 'Check',
   idle: 'Idle',
   maintenance: 'Maintenance',
 };

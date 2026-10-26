@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 
-import { Button, Card, Chip, Field, Screen, tap } from '@/components/ui';
+import { Box, Button, Chip, Field, Label, Press, Screen } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
 import { addDays, jobLabel, niceDay, today, viewMachine } from '@/lib/model';
 import { addJob, removeJob, updateJob, useData } from '@/lib/store';
-import { C, R, S, T } from '@/lib/theme';
+import { makeStyles, R, S, type } from '@/lib/theme';
 
 const QUICK_DAYS = [1, 2, 3, 5, 7, 14];
 const daysLabel = (n: number) => (n === 7 ? '1 week' : n === 14 ? '2 weeks' : `${n} day${n === 1 ? '' : 's'}`);
 
 export default function JobScreen() {
+  const s = useStyles();
   const params = useLocalSearchParams<{ id?: string; machineId?: string }>();
   const data = useData();
   const existing = data.jobs.find((j) => j.id === params.id);
@@ -27,7 +28,7 @@ export default function JobScreen() {
   if (data.machines.length === 0) {
     return (
       <Screen padTop={false}>
-        <Text style={T.dim}>Add a machine first, in the Machines tab.</Text>
+        <Text style={s.muted}>Add a machine first, in the Machines tab.</Text>
       </Screen>
     );
   }
@@ -57,7 +58,7 @@ export default function JobScreen() {
       <Stack.Screen options={{ title: existing ? 'Edit job' : 'New job' }} />
 
       <Field label="What’s the job?" value={title} onChangeText={setTitle} placeholder="e.g. Gearbox bracket" autoFocus={!existing} />
-      <View style={styles.row}>
+      <View style={s.row}>
         <View style={{ flex: 2 }}>
           <Field label="Customer" value={customer} onChangeText={setCustomer} placeholder="Who is it for?" />
         </View>
@@ -68,8 +69,8 @@ export default function JobScreen() {
 
       {!existing && (
         <View style={{ gap: S.sm }}>
-          <Text style={T.label}>On which machine?</Text>
-          <View style={styles.chips}>
+          <Label>On which machine?</Label>
+          <View style={s.chips}>
             {data.machines.map((m) => (
               <Chip key={m.id} label={m.name} selected={m.id === machineId} onPress={() => setMachineId(m.id)} />
             ))}
@@ -78,40 +79,28 @@ export default function JobScreen() {
       )}
 
       <View style={{ gap: S.sm }}>
-        <Text style={T.label}>How long will it take?</Text>
-        <View style={styles.chips}>
+        <Label>How long will it take?</Label>
+        <View style={s.chips}>
           {QUICK_DAYS.map((n) => (
             <Chip key={n} label={daysLabel(n)} selected={days === n} onPress={() => setDays(n)} />
           ))}
         </View>
-        <View style={styles.stepper}>
-          <Pressable
-            accessibilityLabel="One day less"
-            onPress={() => {
-              tap();
-              setDays((d) => Math.max(1, d - 1));
-            }}
-            style={styles.stepButton}>
-            <Text style={styles.stepText}>−</Text>
-          </Pressable>
-          <Text style={styles.stepValue}>{daysLabel(days)}</Text>
-          <Pressable
-            accessibilityLabel="One day more"
-            onPress={() => {
-              tap();
-              setDays((d) => Math.min(90, d + 1));
-            }}
-            style={styles.stepButton}>
-            <Text style={styles.stepText}>+</Text>
-          </Pressable>
+        <View style={s.stepper}>
+          <Press label="One day less" onPress={() => setDays((d) => Math.max(1, d - 1))} style={s.stepButton}>
+            <Text style={s.stepText}>−</Text>
+          </Press>
+          <Text style={s.stepValue}>{daysLabel(days)}</Text>
+          <Press label="One day more" onPress={() => setDays((d) => Math.min(90, d + 1))} style={s.stepButton}>
+            <Text style={s.stepText}>+</Text>
+          </Press>
         </View>
       </View>
 
       {!!when && (
-        <Card style={{ borderColor: C.brand + '55' }}>
-          <Text style={[T.body, { fontWeight: '700' }]}>{when}</Text>
-          <Text style={[T.small, { marginTop: 4 }]}>You’ll get one reminder on the finish day asking if it’s done.</Text>
-        </Card>
+        <Box style={{ gap: 4 }}>
+          <Text style={s.strong}>{when}</Text>
+          <Text style={s.meta}>You’ll get one reminder on the finish day asking if it’s done.</Text>
+        </Box>
       )}
 
       <Button label={existing ? 'Save' : 'Add job'} disabled={!title.trim() || !machineId} onPress={save} />
@@ -119,7 +108,7 @@ export default function JobScreen() {
         <Button
           label="Delete job"
           kind="danger"
-          icon="trash"
+          icon="trash-outline"
           onPress={() =>
             confirm('Delete this job?', jobLabel(existing), 'Delete', () => {
               removeJob(existing.id);
@@ -132,20 +121,23 @@ export default function JobScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
+  muted: { ...type.body, color: c.muted },
+  strong: { ...type.strong, color: c.text },
+  meta: { ...type.meta, color: c.muted },
   row: { flexDirection: 'row', gap: S.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: C.card,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: R.md,
+    borderColor: c.border,
+    borderRadius: R.control,
     padding: S.xs,
   },
-  stepButton: { width: 48, height: 44, borderRadius: R.sm, backgroundColor: C.cardRaised, alignItems: 'center', justifyContent: 'center' },
-  stepText: { color: C.text, fontSize: 22, fontWeight: '700' },
-  stepValue: { color: C.text, fontSize: 17, fontWeight: '800' },
-});
+  stepButton: { width: 52, height: 44, borderRadius: R.control - 3, backgroundColor: c.raised, alignItems: 'center', justifyContent: 'center' },
+  stepText: { color: c.text, fontSize: 22, fontWeight: '500' },
+  stepValue: { color: c.text, fontSize: 17, fontWeight: '600', ...type.num },
+}));
