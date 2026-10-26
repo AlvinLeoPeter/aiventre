@@ -42,7 +42,8 @@ One-step jobs               ──►  api/task.js   (JSON-schema outputs)   ─
    - `ANTHROPIC_API_KEY` — your key
    - `APP_ACCESS_CODE` — a hard-to-guess code you give to pilot shops (anyone with it can spend your credits)
    - optional: `VITE_FORM_ENDPOINT` (e.g. Formspree) for the "Join the pilot" form, `VITE_CONTACT_PHONE`,
-     `VITE_WHATSAPP_NUMBER`, `VITE_CONTACT_EMAIL`, `ANTHROPIC_MODEL` (default `claude-opus-5`)
+     `VITE_WHATSAPP_NUMBER`, `VITE_CONTACT_EMAIL`, and per-job models `ANTHROPIC_MODEL_AGENT` /
+     `ANTHROPIC_MODEL_QUOTE` (default `claude-opus-5`) and `ANTHROPIC_MODEL_SIMPLE` (default `claude-sonnet-5`)
 3. Redeploy. Functions may run up to 300 s (`vercel.json`) because web research takes a while.
 
 ## Develop locally
