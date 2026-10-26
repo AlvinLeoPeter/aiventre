@@ -34,6 +34,13 @@ export type Shop = {
   city: string;
   work: string[]; // kinds of job work
   rate?: number; // usual machine hour rate in ₹, for quotes
+  // Where the shop is — the AI looks for buyers near here first.
+  area?: string; // locality or industrial estate, e.g. Chakan MIDC
+  state?: string;
+  pincode?: string;
+  lat?: number;
+  lng?: number;
+  reach?: number; // how far they'll send parts, in km; 0 = anywhere in India
 };
 
 export type Data = {

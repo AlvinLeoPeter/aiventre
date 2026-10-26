@@ -1,34 +1,30 @@
 import { addDays, type Data, today } from './model';
 
-/** Kinds of job work, offered as chips during setup. */
-export const WORK_TYPES = [
-  'CNC / VMC machining',
-  'CNC turning',
-  'Sheet metal',
-  'Fabrication & welding',
-  'Injection moulding',
-  'Casting',
-  'Grinding',
-  'Powder coating',
-  'Laser cutting',
-  'Other',
-];
+/** Kinds of job work, and the machines each one usually runs on. Setup suggests machines from the work picked. */
+export const WORK: Record<string, string[]> = {
+  'CNC / VMC machining': ['VMC', 'HMC', 'CNC milling', 'Drilling machine', 'Tapping machine'],
+  'CNC turning': ['CNC lathe', 'Turn-mill centre', 'Conventional lathe', 'Traub / auto lathe'],
+  'Sheet metal': ['Press brake', 'Shearing machine', 'Turret punch', 'Power press', 'Rolling machine'],
+  'Fabrication & welding': ['MIG welder', 'TIG welder', 'Arc welder', 'Plasma cutter', 'Bandsaw'],
+  'Injection moulding': ['Injection moulding machine', 'Mould dryer', 'Granulator'],
+  Casting: ['Induction furnace', 'Moulding line', 'Core shooter', 'Shot blasting', 'Fettling station'],
+  Grinding: ['Surface grinder', 'Cylindrical grinder', 'Centreless grinder', 'Tool & cutter grinder'],
+  'Powder coating': ['Powder booth', 'Curing oven', 'Pretreatment line'],
+  'Laser cutting': ['Fiber laser', 'CO2 laser', 'Tube laser'],
+  'Gear cutting': ['Hobbing machine', 'Gear shaper', 'Gear grinder'],
+  'EDM / wire cut': ['Wire EDM', 'Spark EDM', 'Hole drilling EDM'],
+  'Heat treatment': ['Hardening furnace', 'Induction hardening', 'Tempering furnace'],
+};
 
-/** Machine types offered as quick-add chips. */
-export const MACHINE_TYPES = [
-  'VMC',
-  'HMC',
-  'CNC lathe',
-  'Conventional lathe',
-  'Milling machine',
-  'Drilling machine',
-  'Grinder',
-  'Press brake',
-  'Power press',
-  'Laser cutter',
-  'Welding station',
-  'Moulding machine',
-];
+export const WORK_TYPES = [...Object.keys(WORK), 'Other'];
+
+const ALL_MACHINES = [...new Set(Object.values(WORK).flat())];
+
+/** Machines to offer as quick-add chips: those for the work the shop does, else every one we know. */
+export const machineTypesFor = (work: string[]) => {
+  const picked = [...new Set(work.flatMap((w) => WORK[w] ?? []))];
+  return picked.length ? picked : ALL_MACHINES;
+};
 
 /** A realistic sample shop with a machine in every state. Dates are relative to today. */
 export function demoData(): Data {

@@ -69,11 +69,11 @@ function patchJob(id: string, patch: Partial<Job>) {
 
 /* ---------------- shop & machines ---------------- */
 
-export function finishOnboarding(shop: Shop, machines: { type: string; count: number }[]) {
+export function finishOnboarding(shop: Shop, machines: { type: string; count: number; details?: string }[]) {
   const named: Machine[] = [];
-  for (const { type, count } of machines) {
+  for (const { type, count, details = '' } of machines) {
     for (let i = 1; i <= count; i++) {
-      named.push({ id: uid(), name: count > 1 ? `${type} ${i}` : type, type, details: '', maintenance: false });
+      named.push({ id: uid(), name: count > 1 ? `${type} ${i}` : type, type, details, maintenance: false });
     }
   }
   set({ ...data, shop, machines: named });

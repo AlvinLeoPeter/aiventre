@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 
+import { ShopPlace } from '@/components/place';
 import { Box, Button, Chip, Field, Label, Link, Rule, Screen, Section, Segmented } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
 import { WORK_TYPES } from '@/lib/demo';
@@ -39,7 +40,6 @@ export default function ShopScreen() {
       <Box style={{ gap: S.lg }}>
         <Field label="Shop name" value={form.name} onChangeText={(name) => setForm({ ...form, name })} />
         <Field label="Your name" value={form.owner} onChangeText={(owner) => setForm({ ...form, owner })} />
-        <Field label="City" value={form.city} onChangeText={(city) => setForm({ ...form, city })} />
         <View style={{ gap: S.sm }}>
           <Label>What work do you do?</Label>
           <View style={s.chips}>
@@ -48,6 +48,7 @@ export default function ShopScreen() {
             ))}
           </View>
         </View>
+        <ShopPlace value={form} onChange={(p) => setForm((f) => ({ ...f, ...p }))} />
         <Button
           label={saved && !changed ? 'Saved' : 'Save'}
           icon={saved && !changed ? 'checkmark' : undefined}
