@@ -28,3 +28,4 @@ dist-ssr
 
 # Expo cache if the app is ever started from the repo root by mistake
 .expo/
+*.apk
