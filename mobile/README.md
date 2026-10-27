@@ -26,12 +26,11 @@ machine goes idle. Built with Expo (React Native, SDK 58), one codebase for Andr
   "check GeM tenders", "write messages for my new buyers". It saves buyers and messages on the phone.
 - **Sort a reply** — paste a buyer's WhatsApp or email reply; the AI says what it means, the next step and
   drafts an answer, then updates the buyer.
-- **Quote** — photograph a drawing (or pick a photo / PDF); the AI estimates operations, minutes per part and
-  setup; you set the hour rate, material and margin and the price updates as you type. Share it on WhatsApp.
-  Needs the same access code as the website, asked once.
-- **My shop** — full profile (about, phone/email for buyers, capabilities, materials, industries,
-  certifications, hour rate, location), "describe it to AI", a one-page capability profile PDF to send
-  buyers, and backup / restore.
+- **Quote** — photo or PDF of a drawing, or a whole multi-sheet RFQ. For each item the AI plans: can the shop's
+  machines do it (bed, travel, tonnage…), the material in standard stock with weight, the process route with
+  machine, tools (size and type: carbide, HSS, PCD, CBN…) and minutes per step, why that process, and a
+  safety flag for things like man baskets. Prices come from the owner's own rates (shop or per-machine hour
+  rate, ₹/kg per material, margin, GST) and every minute is editable. One tap sends a quotation PDF.
 - **Look** — light, dark, or follow the phone (My shop → Look).
 - **Setup** — describe the shop in one paragraph (or dictate it) and the AI fills in the rest to check; or fill
   it in by hand. Location from GPS, delivery distance, machines suggested from the kinds of work.

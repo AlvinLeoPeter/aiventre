@@ -9,6 +9,8 @@ import { handler, HttpError, MODELS, runStructured } from '../server/claude.js'
    - draft_email:     shop profile + buyer -> outreach or follow-up email
    - triage_reply:    a buyer's reply -> what it means + next step
    - quote_assist:    drawing + notes -> machining estimate (owner decides price)
+   - quote_plan:      drawing(s) or RFQ -> per item: can the shop make it, material,
+                      process route with machines and tools, times (owner decides price)
 ---------------------------------------------------------------- */
 
 const str = { type: 'string' }
@@ -22,6 +24,19 @@ const obj = (properties) => ({
 
 const SHOP_VOICE =
   'You help a small Indian manufacturing job shop (CNC/VMC machining) win orders. Be concrete and honest; never invent facts about the shop or the buyer.'
+
+const num = { type: 'number' }
+
+/** The drawing as content the model can read: a PDF document or an image. */
+function drawingContent(file) {
+  if (!file) return []
+  const { mediaType, data } = file
+  if (mediaType === 'application/pdf') return [{ type: 'document', source: { type: 'base64', media_type: mediaType, data } }]
+  if (['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(mediaType)) {
+    return [{ type: 'image', source: { type: 'base64', media_type: mediaType, data } }]
+  }
+  throw new HttpError(400, 'Upload a PDF, PNG, JPG or WebP drawing.')
+}
 
 const TASKS = {
   extract_profile: {
@@ -137,23 +152,103 @@ const TASKS = {
     }),
     build: ({ file, notes = '', quantity, profile }) => {
       if (!file && !notes.trim()) throw new HttpError(400, 'Add a drawing or describe the part.')
-      const content = []
-      if (file) {
-        const { mediaType, data } = file
-        if (mediaType === 'application/pdf') {
-          content.push({ type: 'document', source: { type: 'base64', media_type: mediaType, data } })
-        } else if (['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(mediaType)) {
-          content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data } })
-        } else {
-          throw new HttpError(400, 'Upload a PDF, PNG, JPG or WebP drawing.')
-        }
-      }
+      const content = drawingContent(file)
       content.push({
         type: 'text',
         text: JSON.stringify({ quantity, owner_notes: notes, shop_profile: profile }),
       })
       return {
         system: `${SHOP_VOICE} Help the owner prepare a machining quote. Read the drawing (if any) and notes. Identify material, key features and critical tolerances. Break the job into operations on the shop's machines with realistic minutes per part for a small Indian job shop, plus one-time setup minutes. Be conservative. Say whether the part fits the shop's machines. List risks, questions to ask the buyer before quoting, and every assumption you made. The owner decides the final price — you only estimate time.`,
+        content,
+      }
+    },
+  },
+
+  quote_plan: {
+    effort: 'high',
+    maxTokens: 48000,
+    model: MODELS.quote,
+    schema: obj({
+      rfq_summary: { ...str, description: 'One or two sentences: what is being asked for, how many items.' },
+      items: {
+        type: 'array',
+        items: obj({
+          name: str,
+          drawing_no: str,
+          quantity: { type: 'integer', description: 'From the drawing or notes; 1 if not stated.' },
+          material: { ...str, description: 'As specified, e.g. "MS ERW pipe + MS sheet".' },
+          finish: str,
+          size: { ...str, description: 'Overall size, e.g. "560 × 546 × 890 mm".' },
+          fits_shop: { type: 'string', enum: ['yes', 'maybe', 'no'] },
+          fit_reason: str,
+          capacity: {
+            type: 'array',
+            description: "One row per machine the job needs, checked against the shop's machines and their details.",
+            items: obj({
+              need: { ...str, description: 'e.g. "Bend 1.0 mm CRCA, 1524 mm long".' },
+              machine: { ...str, description: "The shop's machine that would do it, or the kind of machine needed if they don't have one." },
+              status: { type: 'string', enum: ['ok', 'check', 'missing'] },
+              why: { ...str, description: 'Bed size, travel, tonnage, cutting length, chuck size — or what to check.' },
+            }),
+          },
+          materials: {
+            type: 'array',
+            items: obj({
+              item: { ...str, description: 'Standard stock, e.g. "MS ERW pipe Ø25.4 × 2.0" or "CRCA sheet 1.0 mm".' },
+              material_type: { type: 'string', enum: ['MS', 'GI', 'SS', 'aluminium', 'cast iron', 'brass', 'copper', 'other'] },
+              quantity_per_unit: { ...str, description: 'e.g. "4.2 m" or "0.9 m²" or "1 no".' },
+              weight_kg_per_unit: { ...num, description: 'Steel ≈ 7.85 kg per litre (7850 kg/m³). Include ~10% for scrap and offcuts.' },
+            }),
+          },
+          operations: {
+            type: 'array',
+            description: 'The process route in order.',
+            items: obj({
+              step: { ...str, description: 'e.g. "Cut pipes to length".' },
+              process: { ...str, description: 'e.g. laser cutting, shearing, CNC bending, MIG welding, turning, milling, drilling, powder coating.' },
+              machine: { ...str, description: "Which of the shop's machines, or 'outsource' when they don't have one." },
+              tools: {
+                type: 'array',
+                items: obj({
+                  tool: { ...str, description: 'e.g. "drill", "end mill", "turning insert", "bending punch & die", "MIG wire".' },
+                  size: { ...str, description: 'e.g. "Ø8 mm", "V-die 8 mm", "0.8 mm wire".' },
+                  type: { ...str, description: 'Grade or kind, e.g. "solid carbide, TiAlN coated", "HSS-Co", "PCD (diamond)", "CBN", "black-oxide HSS".' },
+                  why: str,
+                }),
+              },
+              setup_minutes: num,
+              minutes_per_part: num,
+              outsourced_cost_per_part: { ...num, description: 'Rupees, only when the step is outsourced (e.g. powder coating); else 0.' },
+            }),
+          },
+          process_choice: obj({
+            chosen: { ...str, description: 'The overall route, e.g. "Laser cut + CNC bend + MIG weld + powder coat".' },
+            reason: { ...str, description: 'Why this is the most efficient for this quantity and these machines.' },
+            alternatives: { type: 'array', items: obj({ process: str, why_not: str }) },
+          }),
+          safety_critical: { type: 'boolean', description: 'True for anything that lifts or carries people, pressure parts, lifting gear.' },
+          safety_note: str,
+          risks: strList,
+          questions_for_buyer: strList,
+          assumptions: strList,
+        }),
+      },
+    }),
+    build: ({ file, notes = '', profile }) => {
+      if (!file && !notes.trim()) throw new HttpError(400, 'Add a drawing or describe the job.')
+      const content = drawingContent(file)
+      content.push({ type: 'text', text: JSON.stringify({ owner_notes: notes.slice(0, 4000), shop_profile: profile }) })
+      return {
+        system: `${SHOP_VOICE} The shop may do machining and fabrication (cutting, bending, welding, finishing). Plan how this shop would make each item in the drawing or RFQ (one entry per item or sheet).
+For each item:
+- Read quantity, material, finish and size from the drawing.
+- Capacity: check every machine the job needs against the shop's machines and their details (bed size, travel, tonnage, chuck, cutting length). Mark "check" when a detail isn't known, "missing" when they have no suitable machine (then name what's needed, and plan it as outsourced).
+- Materials: standard Indian stock sizes, length or area per unit, and weight per unit including about 10% scrap.
+- Operations in order, on the shop's own machines where possible: for each, the tools with size and type (insert grade, coating, HSS / carbide / PCD diamond / CBN, punch and die, wire), realistic setup minutes and minutes per part for a small Indian shop. Outsourced steps (e.g. powder coating, galvanising, heat treatment) get a rupee cost per part instead.
+- Process choice: pick the most efficient route for this quantity on these machines, say why, and name the alternatives you rejected and why.
+- Safety: anything that lifts or carries people (man baskets, lifting lugs), lifting gear or pressure parts is safety-critical — say what certification, material certificates and load testing the buyer will expect.
+- Risks, questions to ask the buyer, and every assumption.
+Be conservative with times. The owner sets rates and the final price; you plan and estimate time and material only.`,
         content,
       }
     },

@@ -148,3 +148,37 @@ export type SetupResult = {
   certifications: string[];
   missing: string[];
 };
+
+/* ---------------- quote 2.0: plan and price a drawing or RFQ ---------------- */
+
+export type MaterialType = 'MS' | 'GI' | 'SS' | 'aluminium' | 'cast iron' | 'brass' | 'copper' | 'other';
+
+export type PlanItem = {
+  name: string;
+  drawing_no: string;
+  quantity: number;
+  material: string;
+  finish: string;
+  size: string;
+  fits_shop: 'yes' | 'maybe' | 'no';
+  fit_reason: string;
+  capacity: { need: string; machine: string; status: 'ok' | 'check' | 'missing'; why: string }[];
+  materials: { item: string; material_type: MaterialType; quantity_per_unit: string; weight_kg_per_unit: number }[];
+  operations: {
+    step: string;
+    process: string;
+    machine: string;
+    tools: { tool: string; size: string; type: string; why: string }[];
+    setup_minutes: number;
+    minutes_per_part: number;
+    outsourced_cost_per_part: number;
+  }[];
+  process_choice: { chosen: string; reason: string; alternatives: { process: string; why_not: string }[] };
+  safety_critical: boolean;
+  safety_note: string;
+  risks: string[];
+  questions_for_buyer: string[];
+  assumptions: string[];
+};
+
+export type QuotePlan = { rfq_summary: string; items: PlanItem[] };

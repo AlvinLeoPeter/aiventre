@@ -11,6 +11,7 @@ export type Machine = {
   name: string; // "VMC 1"
   type: string; // "VMC"
   details: string; // "Haas, 850 mm travel"
+  rate?: number; // this machine's hour rate in ₹, when it differs from the shop's usual rate
   maintenance: boolean;
 };
 
@@ -49,6 +50,8 @@ export type Shop = {
   materials?: string[];
   industries?: string[];
   certifications?: string[];
+  gstin?: string; // the shop's own, printed on quotations
+  materialRates?: Record<string, number>; // ₹ per kg the owner pays, by material
 };
 
 export type LeadStatus = 'new' | 'contacted' | 'replied' | 'quote_requested' | 'won' | 'lost';

@@ -140,6 +140,13 @@ export default function MachineScreen() {
           onBlur={() => updateMachine(machine.id, { details: details.trim() })}
           placeholder="e.g. Haas, 850 mm travel"
         />
+        <Field
+          label="Hour rate ₹ (if different from the shop’s)"
+          defaultValue={machine.rate ? String(machine.rate) : ''}
+          placeholder={String(data.shop?.rate ?? 800)}
+          keyboardType="number-pad"
+          onEndEditing={(e) => updateMachine(machine.id, { rate: Number(e.nativeEvent.text) || undefined })}
+        />
         <Button
           label={machine.maintenance ? 'Back in action' : 'Mark under maintenance'}
           kind="secondary"
