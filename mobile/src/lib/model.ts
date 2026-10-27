@@ -50,8 +50,10 @@ export type Shop = {
   materials?: string[];
   industries?: string[];
   certifications?: string[];
-  gstin?: string; // the shop's own, printed on quotations
+  gstin?: string; // the shop's own, printed on quotations and invoices
   materialRates?: Record<string, number>; // ₹ per kg the owner pays, by material
+  address?: string; // street address, printed on invoices
+  bank?: { name: string; account: string; ifsc: string; upi: string }; // where buyers pay
 };
 
 export type LeadStatus = 'new' | 'contacted' | 'replied' | 'quote_requested' | 'won' | 'lost';
@@ -116,12 +118,58 @@ export const LEAD_STATUS: Record<LeadStatus, { label: string; tone: Status }> = 
 export const FOLLOW_UP_DAYS = 4;
 export const followUpDue = (l: Lead, now = today()) => l.status === 'contacted' && !!l.followUpAt && l.followUpAt <= now;
 
+/** One row on an invoice. */
+export type InvoiceLine = {
+  description: string;
+  hsn: string; // HSN (goods) or SAC (services) code
+  qty: number;
+  unit: string; // Nos, kg, hr…
+  rate: number; // ₹ per unit, before GST
+  jobId?: string; // the finished job it bills, if any
+};
+
+export type Payment = { id: string; at: string; amount: number; note: string };
+
+/** A bill sent to a buyer, and what's been paid against it. Never deleted: a mistake is cancelled, keeping its number. */
+export type Invoice = {
+  id: string;
+  number: string; // INV/25-26/001 — one series per financial year
+  date: string; // YYYY-MM-DD
+  dueDate: string;
+  buyer: { name: string; gstin: string; address: string; state: string; phone: string; email: string; leadId?: string };
+  ref: string; // the buyer's PO number, delivery challan…
+  lines: InvoiceLine[];
+  gstRate: number; // percent; 0 when the shop isn't registered
+  placeOfSupply: string; // GST state code of the buyer, e.g. 33 = Tamil Nadu
+  inter: boolean; // buyer in another state: IGST instead of CGST + SGST
+  notes: string;
+  payments: Payment[];
+  cancelled: boolean;
+  createdAt: string;
+};
+
+/** A place the owner buys tools or material from. */
+export type Supplier = {
+  id: string;
+  name: string;
+  city: string;
+  phone: string;
+  email: string;
+  website: string;
+  sells: string[]; // what they were saved for
+  lastPrice?: { item: string; price: number; unit: string; url: string; at: string };
+  notes: string;
+  savedAt: string;
+};
+
 export type Data = {
   version: 1;
   shop: Shop | null; // null until onboarding is done
   machines: Machine[];
   jobs: Job[];
   leads?: Lead[]; // added after v0.2; missing in older saves
+  invoices?: Invoice[]; // added with billing
+  suppliers?: Supplier[];
 };
 
 export const FREE_SOON_DAYS = 2;

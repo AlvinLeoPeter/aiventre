@@ -13,6 +13,10 @@ What it makes: `shops`, `shop_members`, `machines`, `jobs`, `leads`. Row Level S
 person only ever sees shops they're a member of; signed-out visitors see nothing; nothing can be hard-deleted
 through the API (the app marks rows `deleted` so deletions reach every phone).
 
+**Updates:** each later file in `migrations/` is run once, in order, the same way.
+[`0002_invoices_suppliers.sql`](migrations/0002_invoices_suppliers.sql) adds `invoices` and `suppliers` (billing and
+saved suppliers). Until it's run, signed-in phones show "The online database needs an update".
+
 ## 2. Make the sign-in email send a code
 
 The app signs people in with a 6-digit code (no passwords, no links to open on the right device).

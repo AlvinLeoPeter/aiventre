@@ -1,4 +1,5 @@
-import { addDays, type Data, today } from './model';
+import { nextInvoiceNumber } from './invoice';
+import { addDays, type Data, type Invoice, today } from './model';
 
 /** Kinds of job work, and the machines each one usually runs on. Setup suggests machines from the work picked. */
 export const WORK: Record<string, string[]> = {
@@ -40,10 +41,67 @@ export function demoData(): Data {
     ...o,
   });
 
+  // Sample invoices (made-up GSTINs that pass the format check): one paid, one overdue and part paid, one to another state.
+  const invoices: Invoice[] = [];
+  const bill = (o: Omit<Invoice, 'number' | 'cancelled' | 'createdAt' | 'ref' | 'notes' | 'gstRate'> & Partial<Pick<Invoice, 'ref'>>) =>
+    invoices.unshift({ ref: '', notes: '', gstRate: 18, cancelled: false, createdAt: `${o.date}T10:00:00.000Z`, number: nextInvoiceNumber(invoices, o.date), ...o });
+  const buyer = (name: string, gstin: string, state: string, address: string) => ({ name, gstin, state, address, phone: '', email: '' });
+  bill({
+    id: 'i1',
+    date: d(-40),
+    dueDate: d(-10),
+    buyer: buyer('Mahindra vendor, Chakan', '27AABCV0000B1ZA', 'Maharashtra', 'Chakan MIDC Phase 2, Pune'),
+    ref: 'PO 4471',
+    lines: [{ description: 'Machining of gearbox bracket', hsn: '9988', qty: 400, unit: 'Nos', rate: 145 }],
+    placeOfSupply: '27',
+    inter: false,
+    payments: [{ id: 'p1', at: d(-12), amount: 68440, note: 'NEFT / RTGS' }],
+  });
+  bill({
+    id: 'i2',
+    date: d(-35),
+    dueDate: d(-5),
+    buyer: buyer('Valve maker, Bhosari', '', 'Maharashtra', 'Bhosari MIDC, Pune'),
+    lines: [
+      { description: 'Flange machining, Drg F-220', hsn: '9988', qty: 150, unit: 'Nos', rate: 210 },
+      { description: 'Facing and drilling, Drg F-221', hsn: '9988', qty: 150, unit: 'Nos', rate: 95 },
+    ],
+    placeOfSupply: '27',
+    inter: false,
+    payments: [{ id: 'p2', at: d(-6), amount: 25000, note: 'UPI' }],
+  });
+  bill({
+    id: 'i3',
+    date: d(-8),
+    dueDate: d(22),
+    buyer: buyer('Pump maker, Coimbatore', '33AAAAA0000A1Z9', 'Tamil Nadu', 'SIDCO Industrial Estate, Kurichi, Coimbatore'),
+    lines: [{ description: 'Pump housing machining', hsn: '9988', qty: 60, unit: 'Nos', rate: 640 }],
+    placeOfSupply: '33',
+    inter: true,
+    payments: [],
+  });
+
   return {
     version: 1,
+    invoices,
+    suppliers: [
+      {
+        id: 's1',
+        name: 'Sample Tools & Traders, Bhosari',
+        city: 'Pune',
+        phone: '',
+        email: '',
+        website: '',
+        sells: ['Carbide end mills', 'Turning inserts'],
+        notes: '',
+        savedAt: `${t}T09:00:00.000Z`,
+      },
+    ],
     shop: {
       name: 'Sharma Precision',
+      gstin: '27AAAAA0000A1Z2',
+      address: 'Plot 14, Chakan Industrial Area',
+      bank: { name: 'Sample Bank', account: '000012345678', ifsc: 'SMPL0001234', upi: 'sharmaprecision@upi' },
       owner: 'Rajesh',
       area: 'Chakan MIDC',
       city: 'Pune',

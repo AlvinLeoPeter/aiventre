@@ -2,13 +2,16 @@ import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FindWorkSection } from '@/components/find-work';
 import { MachineRow } from '@/components/machine-card';
 import { Ring } from '@/components/ring';
-import { Box, Button, Link, Rule, Screen, Section, success } from '@/components/ui';
+import { Box, Button, Link, Press, Rule, Screen, Section, success } from '@/components/ui';
+import { balance, invoiceState, unbilledJobs } from '@/lib/invoice';
 import { addDays, BOARD_DAYS, bookedShare, followUpDue, freeDays, jobLabel, type MachineView, niceDay, relativeDay, type Status, today, viewAll } from '@/lib/model';
 import { autoFind } from '@/lib/find';
+import { inr } from '@/lib/quote';
 import { extendJob, finishJob, useData } from '@/lib/store';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
@@ -78,6 +81,10 @@ export default function Today() {
   const followUps = (data.leads ?? []).filter((l) => followUpDue(l, now));
   const idle = count('idle');
   const free = freeDays(views, now);
+  const invoices = (data.invoices ?? []).filter((i) => !i.cancelled);
+  const toCollect = invoices.reduce((sum, i) => sum + balance(i), 0);
+  const overdue = invoices.filter((i) => invoiceState(i, now).key === 'overdue').sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const unbilled = unbilledJobs(data, now);
 
   return (
     <Screen
@@ -95,7 +102,28 @@ export default function Today() {
         </Box>
       )}
 
-      {(checks.length > 0 || followUps.length > 0) && (
+      <Press onPress={() => router.push('/bills')} scale={0.98} label="Bills">
+        <Box style={s.money}>
+          <Ionicons name="receipt-outline" size={22} color={c.muted} />
+          <View style={{ flex: 1 }}>
+            {invoices.length ? (
+              <>
+                <Text style={s.meta}>To collect</Text>
+                <Text style={s.moneyValue}>{inr(toCollect)}</Text>
+                {overdue.length > 0 && <Text style={[s.meta, { color: c.idle }]}>{overdue.length} overdue</Text>}
+              </>
+            ) : (
+              <>
+                <Text style={s.question}>Bills</Text>
+                <Text style={s.meta}>Make GST invoices and see who still owes you</Text>
+              </>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={c.muted} />
+        </Box>
+      </Press>
+
+      {(checks.length > 0 || followUps.length > 0 || overdue.length > 0 || unbilled.length > 0) && (
         <>
           <Section title="Needs you" />
           {checks.map((v) => (
@@ -111,6 +139,39 @@ export default function Today() {
             </Box>
           ))}
           {followUps.length > 3 && <Link label={`${followUps.length - 3} more follow-ups →`} onPress={() => router.navigate('/buyers')} />}
+          {overdue.slice(0, 2).map((i) => (
+            <Box key={i.id} style={s.check}>
+              <View style={{ gap: 2 }}>
+                <Text style={s.question}>
+                  {inr(balance(i))} overdue from {i.buyer.name}
+                </Text>
+                <Text style={s.meta}>
+                  {i.number} · {invoiceState(i, now).label}
+                </Text>
+              </View>
+              <Button label="Send a reminder" icon="notifications-outline" small onPress={() => router.push({ pathname: '/invoice/[id]', params: { id: i.id } })} />
+            </Box>
+          ))}
+          {unbilled.length > 0 && (
+            <Box style={s.check}>
+              <View style={{ gap: 2 }}>
+                <Text style={s.question}>
+                  {unbilled.length === 1 ? `Bill ${jobLabel(unbilled[0])}?` : `${unbilled.length} finished jobs not billed`}
+                </Text>
+                <Text style={s.meta}>{unbilled[0].customer ? `For ${unbilled[0].customer}` : 'Finished, no invoice yet'}</Text>
+              </View>
+              <Button
+                label="Make invoice"
+                icon="receipt-outline"
+                small
+                onPress={() => {
+                  const first = unbilled[0].customer;
+                  const ids = unbilled.filter((j) => j.customer === first).map((j) => j.id);
+                  router.push({ pathname: '/invoice/edit', params: { jobIds: ids.join(',') } });
+                }}
+              />
+            </Box>
+          )}
         </>
       )}
 
@@ -157,6 +218,8 @@ const useStyles = makeStyles((c) => ({
   statLabel: { ...type.meta, color: c.muted },
   statValue: { ...type.strong, fontSize: 17, color: c.text, ...type.num },
   check: { borderColor: c.soon, gap: S.md },
+  money: { flexDirection: 'row', alignItems: 'center', gap: S.md },
+  moneyValue: { ...type.strong, fontSize: 20, color: c.text, ...type.num },
   question: { ...type.strong, fontSize: 16, color: c.text },
   meta: { ...type.meta, color: c.muted },
   body: { ...type.body, color: c.muted },
