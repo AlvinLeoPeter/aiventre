@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { loadChat } from '@/lib/assistant';
 import { autoFind } from '@/lib/find';
 import { onNotificationTap } from '@/lib/notify';
+import { startSync } from '@/lib/sync';
 import { loadPrefs } from '@/lib/prefs';
 import { loadData, useReady } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -18,7 +19,7 @@ export default function RootLayout() {
   const { c, scheme } = useTheme();
 
   useEffect(() => {
-    loadPrefs().then(loadData);
+    loadPrefs().then(loadData).then(startSync);
     loadChat();
   }, []);
 
@@ -61,6 +62,7 @@ export default function RootLayout() {
         <Stack.Screen name="buyer/new" options={{ presentation: 'modal', title: 'Add a buyer' }} />
         <Stack.Screen name="reply" options={{ presentation: 'modal', title: 'Sort a reply' }} />
         <Stack.Screen name="assistant" options={{ headerShown: false }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
       </Stack>
     </ThemeProvider>
   );

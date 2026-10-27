@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Link, Press, tap } from '@/components/ui';
 import { ask, type Entry, newChat, useChat } from '@/lib/assistant';
-import { usePrefs } from '@/lib/prefs';
+import { useAIReady } from '@/lib/auth';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const SUGGESTIONS = [
@@ -88,7 +88,7 @@ export default function Assistant() {
   const s = useStyles();
   const insets = useSafeAreaInsets();
   const { log, busy, busySince } = useChat();
-  const { accessCode } = usePrefs();
+  const aiReady = useAIReady();
   const [text, setText] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const scroll = useRef<ScrollViewInstance>(null);
@@ -132,9 +132,9 @@ export default function Assistant() {
               I look for real companies on the web, save them to your buyers with the link, and write messages for you to check. I
               never send anything myself.
             </Text>
-            {!accessCode && <Text style={[s.body, { color: c.idle }]}>Add the access code first: My shop → AI.</Text>}
+            {!aiReady && <Text style={[s.body, { color: c.idle }]}>Sign in or add the access code first: My shop.</Text>}
             {SUGGESTIONS.map((q) => (
-              <Press key={q} onPress={() => send(q)} style={s.suggestion} scale={0.98} disabled={!!busy || !accessCode}>
+              <Press key={q} onPress={() => send(q)} style={s.suggestion} scale={0.98} disabled={!!busy || !aiReady}>
                 <Text style={s.answer}>{q}</Text>
               </Press>
             ))}

@@ -1,5 +1,6 @@
 import type { Checks, Data, Lead } from './model';
 import { getPrefs, setAccessCode } from './prefs';
+import { accessToken } from './supabase';
 
 /**
  * Calls to Aiventre's server (the same one the website uses). The Claude key lives
@@ -19,10 +20,17 @@ export class ApiError extends Error {
 
 export async function post<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
+  const code = getPrefs().accessCode;
+  // Signed in: the login token is enough (for approved emails). Otherwise the shared code.
+  const token = await accessToken().catch(() => null);
   try {
     res = await fetch(`${API_URL}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-access-code': getPrefs().accessCode },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(code && { 'x-access-code': code }),
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
       body: JSON.stringify(body),
     });
   } catch {
@@ -31,8 +39,8 @@ export async function post<T>(path: string, body: unknown): Promise<T> {
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     // Wrong or changed code: forget it so the app asks again.
-    setAccessCode('');
-    throw new ApiError(401, 'That access code didn’t work. Enter it again.');
+    if (code) setAccessCode('');
+    throw new ApiError(401, code ? 'That access code didn’t work. Enter it again.' : 'Sign in, or enter the access code: My shop → AI.');
   }
   if (!res.ok) throw new ApiError(res.status, data.error || `Something went wrong (${res.status}). Try again.`);
   return data as T;

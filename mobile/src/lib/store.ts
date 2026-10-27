@@ -20,12 +20,33 @@ const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
 
-function set(next: Data) {
+/* Sync (lib/sync.ts) listens for changes made on this phone, and is told when the phone's
+   copy is being thrown away (reset, sample shop) so it doesn't push that to the cloud. */
+let onLocalChange: ((prev: Data, next: Data) => void) | null = null;
+let onDetach: (() => void) | null = null;
+export function connectSync(change: typeof onLocalChange, detach: typeof onDetach) {
+  onLocalChange = change;
+  onDetach = detach;
+}
+
+function set(next: Data, fromCloud = false) {
+  const prev = data;
   data = next;
   emit();
   AsyncStorage.setItem(KEY, JSON.stringify(data)).catch(() => {
     // Storage full or unavailable: keep working in memory.
   });
+  if (!fromCloud) onLocalChange?.(prev, next);
+}
+
+/** Puts data that came from the cloud in place, without sending it back. */
+export function applyFromCloud(next: Data) {
+  set({ ...next, leads: (next.leads ?? []).map(normalizeLead) }, true);
+}
+
+/** Books "is it done?" reminders on this phone for running jobs that don't have one here. */
+export async function rebookAll() {
+  for (const j of data.jobs.filter((x) => x.status === 'running' && x.due && !x.notificationId)) await rebook(j.id);
 }
 
 export async function loadData() {
@@ -323,10 +344,12 @@ export function restoreBackup(text: string) {
 
 /** A realistic sample shop, for trying the app or showing it to someone. */
 export function loadDemo() {
-  set(demoData());
+  onDetach?.();
+  set(demoData(), true);
 }
 
 export function resetAll() {
+  onDetach?.();
   data.jobs.forEach((j) => cancelReminder(j.notificationId));
-  set(empty());
+  set(empty(), true);
 }
