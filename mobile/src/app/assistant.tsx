@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, type ScrollViewInstance, Text, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Markdown } from '@/components/chat';
 import { Link, Press, tap } from '@/components/ui';
 import { ask, type Entry, newChat, useChat } from '@/lib/assistant';
 import { useAIReady } from '@/lib/auth';
@@ -16,48 +16,6 @@ const SUGGESTIONS = [
   'Check GeM and other tender sites for jobs I could bid on.',
   'Write first messages for my new buyers that have a phone or email.',
 ];
-
-/* Just enough formatting for the agent's replies: paragraphs, bullet lists, **bold** and [links](url). */
-function Inline({ text, style }: { text: string; style: object }) {
-  const { c } = useTheme();
-  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g);
-  return (
-    <Text style={style}>
-      {parts.map((p, i) => {
-        if (p.startsWith('**') && p.endsWith('**')) return <Text key={i} style={{ fontWeight: '600' }}>{p.slice(2, -2)}</Text>;
-        const link = p.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
-        if (link)
-          return (
-            <Text key={i} style={{ color: c.text, textDecorationLine: 'underline' }} onPress={() => WebBrowser.openBrowserAsync(link[2]).catch(() => {})}>
-              {link[1]}
-            </Text>
-          );
-        return p;
-      })}
-    </Text>
-  );
-}
-
-function Markdown({ text }: { text: string }) {
-  const s = useStyles();
-  const lines = text.split('\n').map((l) => l.trimEnd()).filter((l) => l.trim());
-  return (
-    <View style={{ gap: 6 }}>
-      {lines.map((line, i) => {
-        const item = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
-        const heading = line.match(/^#{1,6}\s+(.*)$/);
-        if (item)
-          return (
-            <View key={i} style={{ flexDirection: 'row', gap: 6 }}>
-              <Text style={s.answer}>•</Text>
-              <Inline text={item[1]} style={[s.answer, { flex: 1 }]} />
-            </View>
-          );
-        return <Inline key={i} text={heading ? `**${heading[1]}**` : line} style={s.answer} />;
-      })}
-    </View>
-  );
-}
 
 function Message({ entry }: { entry: Entry }) {
   const { c } = useTheme();

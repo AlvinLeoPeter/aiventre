@@ -129,7 +129,7 @@ export default handler(async ({ messages }) => {
   return runTurn({
     max_tokens: 64000,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-    thinking: { type: 'adaptive' },
+    output_config: { effort: 'high' },
     tools: TOOLS,
     messages,
   })
