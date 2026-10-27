@@ -172,6 +172,13 @@ export default function ShopScreen() {
           </View>
         </View>
         <Field label="Email for buyers" value={form.email ?? ''} onChangeText={(email) => patch({ email })} keyboardType="email-address" autoCapitalize="none" />
+        <Field
+          label="Your GSTIN (printed on quotations)"
+          value={form.gstin ?? ''}
+          onChangeText={(gstin) => patch({ gstin: gstin.toUpperCase() })}
+          autoCapitalize="characters"
+          maxLength={15}
+        />
         <View style={{ gap: S.sm }}>
           <Label>What work do you do?</Label>
           <View style={s.chips}>
