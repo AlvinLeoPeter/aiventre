@@ -18,7 +18,7 @@ import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const COMING = [
   'Searches that run overnight even when the app is closed',
-  'Login, and your shop synced between phone and laptop',
+  'Payment reminders that go out by themselves',
 ];
 
 const THEMES: { value: ThemePref; label: string }[] = [
@@ -33,6 +33,8 @@ const LISTS = [
   ['industries', 'Industries you serve', 'e.g. tractor parts, pumps, valves'],
   ['certifications', 'Certifications', 'e.g. ISO 9001:2015'],
 ] as const;
+
+const BLANK_BANK = { name: '', account: '', ifsc: '', upi: '' };
 
 const toList = (text: string) => text.split(',').map((x) => x.trim()).filter(Boolean);
 
@@ -161,6 +163,7 @@ export default function ShopScreen() {
   const s = useStyles();
   const data = useData();
   const prefs = usePrefs();
+  const session = useSession();
   const shop = data.shop!;
   const [form, setForm] = useState<Shop>(shop);
   // When the profile changes elsewhere (the AI, a restore), start again from the new one.
@@ -184,6 +187,10 @@ export default function ShopScreen() {
       <Button label="Send my capability profile (PDF)" icon="document-text-outline" onPress={() => shareProfile(data).catch((e) => setFileError((e as Error).message))} />
       <Text style={[s.meta, { marginTop: -S.sm }]}>One page about your shop, machines and what you make — to send buyers on WhatsApp or email.</Text>
       {!!fileError && <Text style={[s.meta, { color: c.idle }]}>{fileError}</Text>}
+      <View style={s.row}>
+        <Button label="Bills" icon="receipt-outline" kind="secondary" small flex onPress={() => router.push('/bills')} />
+        <Button label="Buy tools & material" icon="cart-outline" kind="secondary" small flex onPress={() => router.push('/buy')} />
+      </View>
 
       <Section title="Profile" right={!describing && <Link label="Describe it to AI" onPress={() => setDescribing(true)} />} />
       {describing && <Describe />}
@@ -221,6 +228,42 @@ export default function ShopScreen() {
           autoCapitalize="characters"
           maxLength={15}
         />
+        <Field
+          label="Address (printed on invoices)"
+          value={form.address ?? ''}
+          onChangeText={(address) => patch({ address })}
+          placeholder="e.g. Plot 12, SIDCO Industrial Estate, Ambattur"
+        />
+        <View style={{ gap: S.sm }}>
+          <Label>Where buyers pay you (printed on invoices)</Label>
+          <View style={s.row}>
+            <View style={{ flex: 1 }}>
+              <Field label="Bank" value={form.bank?.name ?? ''} onChangeText={(name) => patch({ bank: { ...BLANK_BANK, ...form.bank, name } })} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Field
+                label="IFSC"
+                value={form.bank?.ifsc ?? ''}
+                onChangeText={(ifsc) => patch({ bank: { ...BLANK_BANK, ...form.bank, ifsc: ifsc.toUpperCase() } })}
+                autoCapitalize="characters"
+                maxLength={11}
+              />
+            </View>
+          </View>
+          <Field
+            label="Account number"
+            value={form.bank?.account ?? ''}
+            onChangeText={(account) => patch({ bank: { ...BLANK_BANK, ...form.bank, account } })}
+            keyboardType="number-pad"
+          />
+          <Field
+            label="UPI ID"
+            value={form.bank?.upi ?? ''}
+            onChangeText={(upi) => patch({ bank: { ...BLANK_BANK, ...form.bank, upi: upi.trim() } })}
+            autoCapitalize="none"
+            placeholder="e.g. shopname@okicici"
+          />
+        </View>
         <View style={{ gap: S.sm }}>
           <Label>What work do you do?</Label>
           <View style={s.chips}>
@@ -291,7 +334,9 @@ export default function ShopScreen() {
           }
         />
       </View>
-      <Text style={[s.meta, { marginTop: -S.sm }]}>Until login arrives, your shop lives only on this phone. Save a backup to Drive or WhatsApp now and then.</Text>
+      <Text style={[s.meta, { marginTop: -S.sm }]}>
+        {session ? 'Your shop is saved online too. A backup file is an extra copy you keep yourself.' : 'Your shop lives only on this phone until you sign in. Save a backup to Drive or WhatsApp now and then.'}
+      </Text>
 
       <Section title="Coming next" />
       <Box flush>

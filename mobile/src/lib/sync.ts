@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getSession, onSessionChange, signOut } from './auth';
-import type { Data, Job, Lead, Machine, Shop } from './model';
+import type { Data, Invoice, Job, Lead, Machine, Shop, Supplier } from './model';
 import { applyFromCloud, connectSync, getData, rebookAll } from './store';
 import { supabase } from './supabase';
 
@@ -18,9 +18,9 @@ import { supabase } from './supabase';
  * Reminders are booked per phone, so their ids never leave the phone.
  */
 
-type Table = 'machines' | 'jobs' | 'leads';
-const TABLES: Table[] = ['machines', 'jobs', 'leads'];
-type Row = Machine | Job | Lead;
+type Table = 'machines' | 'jobs' | 'leads' | 'invoices' | 'suppliers';
+const TABLES: Table[] = ['machines', 'jobs', 'leads', 'invoices', 'suppliers'];
+type Row = Machine | Job | Lead | Invoice | Supplier;
 
 type State = {
   userId: string | null; // whose shop this phone is linked to
@@ -35,8 +35,8 @@ const KEY = 'aiventre:sync';
 const fresh = (): State => ({
   userId: null,
   shopId: null,
-  cursor: { machines: '', jobs: '', leads: '', shop: '' },
-  outbox: { machines: {}, jobs: {}, leads: {} },
+  cursor: { machines: '', jobs: '', leads: '', invoices: '', suppliers: '', shop: '' },
+  outbox: { machines: {}, jobs: {}, leads: {}, invoices: {}, suppliers: {} },
   shopDirty: 0,
   lastSynced: null,
 });
@@ -67,7 +67,7 @@ export const getSyncState = () => status.state;
 
 /* ---------------- recording changes made on this phone ---------------- */
 
-const list = (d: Data, t: Table): Row[] => (t === 'leads' ? (d.leads ?? []) : d[t]);
+const list = (d: Data, t: Table): Row[] => d[t] ?? [];
 
 function recordChanges(prev: Data, next: Data) {
   if (!st.shopId) {
@@ -278,7 +278,10 @@ async function run() {
     persist();
     setStatus({ state: 'ok', message: undefined });
   } catch (e) {
-    const message = (e as Error).message ?? String(e);
+    const raw = (e as Error).message ?? String(e);
+    const message = /could not find the table|relation .* does not exist/i.test(raw)
+      ? 'The online database needs an update: run the newest file in supabase/migrations in the Supabase SQL Editor.'
+      : raw;
     const offline = /network|fetch|failed to fetch|timed? ?out/i.test(message);
     setStatus({ state: offline ? 'offline' : 'error', message: offline ? undefined : message });
   }
@@ -288,7 +291,8 @@ async function run() {
 export async function startSync() {
   try {
     const saved = JSON.parse((await AsyncStorage.getItem(KEY)) ?? 'null');
-    if (saved) st = { ...fresh(), ...saved };
+    // Saves from before a table existed lack its cursor and outbox.
+    if (saved) st = { ...fresh(), ...saved, cursor: { ...fresh().cursor, ...saved.cursor }, outbox: { ...fresh().outbox, ...saved.outbox } };
   } catch {
     // Start unlinked; the next sign-in links again.
   }

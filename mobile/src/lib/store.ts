@@ -2,7 +2,8 @@ import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { demoData } from './demo';
-import { addDays, type Data, type Flag, FOLLOW_UP_DAYS, type Job, jobLabel, type Lead, type Machine, type Shop, today } from './model';
+import { nextInvoiceNumber } from './invoice';
+import { addDays, type Data, type Flag, FOLLOW_UP_DAYS, type Invoice, type Job, jobLabel, type Lead, type Machine, type Payment, type Shop, type Supplier, today } from './model';
 import { bookDoneCheck, bookFollowUp, cancelReminder } from './notify';
 
 /**
@@ -327,6 +328,60 @@ export function saveChecks(results: { id: string; checks: Lead['checks'] }[]) {
       return { ...l, checks, email: l.email || checks?.filled?.email || '', phone: l.phone || checks?.filled?.phone || '' };
     }),
   });
+}
+
+/* ---------------- invoices ---------------- */
+
+export type NewInvoice = Omit<Invoice, 'id' | 'number' | 'payments' | 'cancelled' | 'createdAt'>;
+
+/** Saves a new invoice with the next number in its financial year's series. */
+export function addInvoice(input: NewInvoice) {
+  const invoices = data.invoices ?? [];
+  const invoice: Invoice = { ...input, id: uid(), number: nextInvoiceNumber(invoices, input.date), payments: [], cancelled: false, createdAt: stamp() };
+  set({ ...data, invoices: [invoice, ...invoices] });
+  return invoice;
+}
+
+export function updateInvoice(id: string, patch: Partial<Omit<Invoice, 'id' | 'number' | 'createdAt'>>) {
+  set({ ...data, invoices: (data.invoices ?? []).map((i) => (i.id === id ? { ...i, ...patch } : i)) });
+}
+
+export function addPayment(id: string, payment: Omit<Payment, 'id'>) {
+  const inv = data.invoices?.find((i) => i.id === id);
+  if (inv) updateInvoice(id, { payments: [...inv.payments, { ...payment, id: uid() }] });
+}
+
+export function removePayment(id: string, paymentId: string) {
+  const inv = data.invoices?.find((i) => i.id === id);
+  if (inv) updateInvoice(id, { payments: inv.payments.filter((p) => p.id !== paymentId) });
+}
+
+/* ---------------- suppliers ---------------- */
+
+/** Saves a supplier, or adds to what an already-saved one sells (matched by name or website). */
+export function saveSupplier(s: Omit<Supplier, 'id' | 'savedAt' | 'notes'>) {
+  const suppliers = data.suppliers ?? [];
+  const same = suppliers.find((x) => key(x.name) === key(s.name) || (!!s.website && key(x.website) === key(s.website)));
+  if (same) {
+    const merged: Supplier = {
+      ...same,
+      phone: same.phone || s.phone,
+      email: same.email || s.email,
+      website: same.website || s.website,
+      city: same.city || s.city,
+      sells: uniqueList(same.sells, s.sells),
+      lastPrice: s.lastPrice ?? same.lastPrice,
+    };
+    set({ ...data, suppliers: suppliers.map((x) => (x.id === same.id ? merged : x)) });
+    return merged;
+  }
+  const fresh: Supplier = { ...s, id: uid(), notes: '', savedAt: stamp() };
+  set({ ...data, suppliers: [fresh, ...suppliers] });
+  return fresh;
+}
+
+export function removeSupplier(id: string) {
+  set({ ...data, suppliers: (data.suppliers ?? []).filter((s) => s.id !== id) });
 }
 
 /* ---------------- backup ---------------- */

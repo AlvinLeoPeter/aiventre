@@ -63,6 +63,10 @@ export default function RootLayout() {
         <Stack.Screen name="reply" options={{ presentation: 'modal', title: 'Sort a reply' }} />
         <Stack.Screen name="assistant" options={{ headerShown: false }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
+        <Stack.Screen name="bills" options={{ title: 'Bills' }} />
+        <Stack.Screen name="invoice/[id]" options={{ title: '' }} />
+        <Stack.Screen name="invoice/edit" options={{ title: 'Invoice' }} />
+        <Stack.Screen name="buy" options={{ title: 'Buy' }} />
       </Stack>
     </ThemeProvider>
   );

@@ -285,8 +285,8 @@ export async function checkBuyer(b, open = fetchPage) {
   return { at: new Date().toISOString(), link, website, email, phone, registration, passed, filled }
 }
 
-/** Checks several buyers at once, a few at a time. */
-export async function checkBuyers(list, concurrency = 4, open = fetchPage) {
+/** Runs `fn` over a list a few at a time; a failure gives `fallback` for that item. */
+async function pool(list, fn, concurrency, fallback) {
   const out = new Array(list.length)
   let next = 0
   await Promise.all(
@@ -294,12 +294,56 @@ export async function checkBuyers(list, concurrency = 4, open = fetchPage) {
       while (next < list.length) {
         const i = next++
         try {
-          out[i] = await checkBuyer(list[i], open)
+          out[i] = await fn(list[i])
         } catch {
-          out[i] = null
+          out[i] = fallback
         }
       }
     }),
   )
   return out
 }
+
+/** Checks several buyers at once, a few at a time. */
+export const checkBuyers = (list, concurrency = 4, open = fetchPage) => pool(list, (b) => checkBuyer(b, open), concurrency, null)
+
+/* ---------------- supplier prices ---------------- */
+
+// These answers mean the page exists but turns away automated visitors (common on marketplaces).
+const BLOCKED = new Set(['http_401', 'http_403', 'http_429', 'http_503'])
+
+/**
+ * True when the page shows this rupee price next to a currency mark: "₹1,250", "Rs. 1250.00",
+ * "1,25,000 INR", "1250/-". A bare number isn't enough — "50" is on every page.
+ */
+export function priceOnPage(text, price) {
+  if (!(price > 0) || !text) return false
+  const whole = Math.floor(price)
+  const paise = Math.round((price - whole) * 100)
+  // Commas anywhere, so both 1,25,000 and 125,000 match.
+  const digits = String(whole).split('').join(',?')
+  // A whole price may be written with .00, but not with other paise.
+  const tail = !paise ? '(?:\\.0{1,2})?(?!\\.\\d*[1-9])' : paise % 10 ? `\\.${String(paise).padStart(2, '0')}` : `\\.${paise / 10}0?`
+  const amount = `${digits}${tail}(?![\\d,]*\\d)`
+  const before = new RegExp(`(?:₹|rs\\.?|inr|mrp|price)[^\\d]{0,12}(?<![\\d.])${amount}`)
+  const after = new RegExp(`(?<![\\d.,])${amount}\\s*(?:/-|inr|rupees)`)
+  return before.test(text) || after.test(text)
+}
+
+/** Opens the page an offer cites (and the supplier's site if that page won't load). */
+export async function checkOffer(o, open = fetchPage) {
+  const page = o.url ? await open(String(o.url)) : null
+  const pageState = !page ? 'none' : page.ok ? 'ok' : BLOCKED.has(page.reason) ? 'blocked' : 'broken'
+  let website = o.website ? 'unchecked' : 'none'
+  if (pageState === 'ok') website = 'ok'
+  else if (o.website) website = (await open(String(o.website))).ok ? 'ok' : 'down'
+  return {
+    at: new Date().toISOString(),
+    page: pageState,
+    website,
+    priceSeen: pageState === 'ok' && priceOnPage(page.text, Number(o.price)),
+  }
+}
+
+export const checkOffers = (list, concurrency = 4, open = fetchPage) =>
+  pool(list, (o) => checkOffer(o, open), concurrency, { at: new Date().toISOString(), page: 'none', website: 'none', priceSeen: false })

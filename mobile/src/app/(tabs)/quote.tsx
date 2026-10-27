@@ -9,7 +9,9 @@ import { choosePdf, choosePhoto, type PickedDrawing, takePhoto } from '@/lib/dra
 import type { Status } from '@/lib/model';
 import { useAIReady } from '@/lib/auth';
 import { setAccessCode } from '@/lib/prefs';
+import { DEFAULT_SAC, setInvoiceDraft } from '@/lib/invoice';
 import { DEFAULT_RATE, type Edits, GST, inr, isOutsourced, MATERIAL_RATES, priceItem, type Rates, rateFor, shareQuotation } from '@/lib/quote';
+import { needsFromPlan, setPendingNeeds } from '@/lib/source';
 import { updateShop, useData } from '@/lib/store';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
 
@@ -413,6 +415,39 @@ export default function QuoteScreen() {
           />
           {!!shareError && <Text style={[s.meta, { color: c.idle }]}>{shareError}</Text>}
           <Text style={s.meta}>AI plans and times can be wrong. Check them against your own experience before you send a price.</Text>
+          <View style={s.row}>
+            <Button
+              label="Where to buy"
+              icon="cart-outline"
+              kind="secondary"
+              small
+              flex
+              onPress={() => {
+                setPendingNeeds(needsFromPlan(lines));
+                router.push('/buy');
+              }}
+            />
+            <Button
+              label="Order won: bill it"
+              icon="receipt-outline"
+              kind="secondary"
+              small
+              flex
+              onPress={() => {
+                setInvoiceDraft({
+                  buyerName: customer.trim(),
+                  lines: lines.map((l) => ({
+                    description: `${l.item.name}${l.item.drawing_no ? `, Drg ${l.item.drawing_no}` : ''}`,
+                    hsn: DEFAULT_SAC,
+                    qty: l.qty,
+                    unit: 'Nos',
+                    rate: l.unitPrice,
+                  })),
+                });
+                router.push('/invoice/edit');
+              }}
+            />
+          </View>
           <Button
             label="Start a new quote"
             kind="secondary"
