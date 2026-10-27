@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { createRemoteJWKSet, jwtVerify } from 'jose'
 
 /* ----------------------------------------------------------------
    Shared helpers for the /api functions. Server-only: the API key
@@ -39,11 +40,42 @@ export class HttpError extends Error {
   }
 }
 
-// Every endpoint spends API credits, so every request must carry the access code.
-export function checkAccess(req) {
+/* ---------------- who may spend credits ---------------- */
+
+// Supabase signs each user's login token; its public keys let us check one without a round trip.
+let jwks
+const supabaseKeys = () => (jwks ??= createRemoteJWKSet(new URL(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/.well-known/jwks.json`)))
+
+const allowedEmails = () =>
+  new Set((process.env.APP_ALLOWED_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean))
+
+/** The signed-in person's email, if the request carries a valid Supabase login token. */
+export async function signedInEmail(req, keys = supabaseKeys) {
+  const token = /^Bearer (.+)$/.exec(req.headers.authorization || '')?.[1]
+  if (!token || !process.env.SUPABASE_URL) return null
+  try {
+    const { payload } = await jwtVerify(token, keys(), {
+      issuer: `${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1`,
+      audience: 'authenticated',
+    })
+    return typeof payload.email === 'string' ? payload.email.toLowerCase() : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Every endpoint spends API credits. Allowed: the shared access code, or a signed-in
+ * person whose email is on APP_ALLOWED_EMAILS (so a stranger who signs up can't).
+ */
+export async function checkAccess(req, keys) {
   const expected = process.env.APP_ACCESS_CODE
-  if (!expected) throw new HttpError(500, 'APP_ACCESS_CODE is not set on the server.')
-  if (req.headers['x-access-code'] !== expected) throw new HttpError(401, 'Wrong access code.')
+  if (expected && req.headers['x-access-code'] === expected) return
+  const email = await signedInEmail(req, keys)
+  if (email && allowedEmails().has(email)) return
+  if (email) throw new HttpError(403, 'Your account isn’t switched on for the AI yet. Ask Aiventre to add your email.')
+  if (!expected && !process.env.SUPABASE_URL) throw new HttpError(500, 'Neither APP_ACCESS_CODE nor SUPABASE_URL is set on the server.')
+  throw new HttpError(401, 'Wrong access code.')
 }
 
 /**
@@ -91,7 +123,7 @@ export function handler(fn) {
   return async (req, res) => {
     try {
       if (req.method !== 'POST') throw new HttpError(405, 'Use POST.')
-      checkAccess(req)
+      await checkAccess(req)
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
       res.status(200).json(await fn(body))
     } catch (err) {

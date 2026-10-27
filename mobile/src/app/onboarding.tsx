@@ -8,7 +8,8 @@ import { Box, Button, Chip, Field, Label, Screen } from '@/components/ui';
 import { runTask, type SetupResult } from '@/lib/api';
 import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
-import { setAccessCode, usePrefs } from '@/lib/prefs';
+import { useAIReady } from '@/lib/auth';
+import { setAccessCode } from '@/lib/prefs';
 import { finishOnboarding, loadDemo } from '@/lib/store';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
 
@@ -59,7 +60,7 @@ function StepView({ children }: { children: ReactNode }) {
 export default function Onboarding() {
   const { c } = useTheme();
   const s = useStyles();
-  const { accessCode } = usePrefs();
+  const aiReady = useAIReady();
   const [step, setStep] = useState<Step>('welcome');
   const [shop, setShop] = useState<Shop>({ name: '', owner: '', city: '', work: [], reach: DEFAULT_REACH });
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -84,7 +85,7 @@ export default function Onboarding() {
     setBusy(true);
     setError('');
     try {
-      if (!accessCode) setAccessCode(code);
+      if (!aiReady) setAccessCode(code);
       const r = await runTask<SetupResult>('setup_shop', {
         text: story,
         work_options: WORK_TYPES,
@@ -136,6 +137,7 @@ export default function Onboarding() {
           }}
         />
         <Text style={[s.meta, { textAlign: 'center' }]}>Takes about a minute.</Text>
+        <Button label="I already have an account — sign in" kind="quiet" onPress={() => router.push('/account')} />
       </Screen>
     );
   }
@@ -162,7 +164,7 @@ export default function Onboarding() {
             textAlignVertical="top"
             style={s.story}
           />
-          {!accessCode && (
+          {!aiReady && (
             <Field
               label="Access code (from Alvin)"
               value={code}
@@ -174,7 +176,7 @@ export default function Onboarding() {
           )}
           <Button
             label={busy ? 'Reading what you wrote…' : 'Fill it in for me'}
-            disabled={busy || story.trim().length < 15 || (!accessCode && !code.trim())}
+            disabled={busy || story.trim().length < 15 || (!aiReady && !code.trim())}
             onPress={fillFromStory}
           />
           {busy && (

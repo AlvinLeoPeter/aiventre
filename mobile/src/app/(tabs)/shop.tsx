@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ShopPlace } from '@/components/place';
 import { Box, Button, Chip, Field, Label, Link, Rule, Screen, Section, Segmented } from '@/components/ui';
 import { runTask, type SetupResult } from '@/lib/api';
+import { useSession } from '@/lib/auth';
 import { confirm } from '@/lib/confirm';
 import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
 import { setAccessCode, setAutoFind, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
 import { pickBackup, shareBackup, shareProfile } from '@/lib/share';
 import { loadDemo, mergeShop, resetAll, updateShop, useData } from '@/lib/store';
+import { useSyncStatus } from '@/lib/sync';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const COMING = [
@@ -32,6 +35,44 @@ const LISTS = [
 ] as const;
 
 const toList = (text: string) => text.split(',').map((x) => x.trim()).filter(Boolean);
+
+/** Signed in or not, and whether the shop is safely online. */
+function AccountBox() {
+  const { c } = useTheme();
+  const s = useStyles();
+  const session = useSession();
+  const status = useSyncStatus();
+  if (!session) {
+    return (
+      <Box>
+        <Text style={s.strong}>Your shop is only on this phone</Text>
+        <Text style={s.body}>Sign in to save it online, use it on another phone, and let Aiventre find work while the app is closed.</Text>
+        <Button label="Sign in with email" icon="person-circle-outline" onPress={() => router.push('/account')} />
+      </Box>
+    );
+  }
+  const line =
+    status.state === 'choose'
+      ? 'Choose which shop to keep'
+      : status.state === 'syncing'
+        ? 'Syncing…'
+        : status.state === 'offline'
+          ? 'Offline — will sync later'
+          : status.state === 'error'
+            ? 'Couldn’t sync — tap to see why'
+            : 'Saved online';
+  return (
+    <Pressable onPress={() => router.push('/account')}>
+      <Box style={s.between}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.strong}>{line}</Text>
+          <Text style={s.meta}>{session.user.email}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={c.muted} />
+      </Box>
+    </Pressable>
+  );
+}
 
 /** A comma-separated list, kept as typed until you leave the field. */
 function ListField({ label, placeholder, value, onChange }: { label: string; placeholder: string; value?: string[]; onChange: (v: string[]) => void }) {
@@ -139,6 +180,7 @@ export default function ShopScreen() {
 
   return (
     <Screen title="My shop">
+      <AccountBox />
       <Button label="Send my capability profile (PDF)" icon="document-text-outline" onPress={() => shareProfile(data).catch((e) => setFileError((e as Error).message))} />
       <Text style={[s.meta, { marginTop: -S.sm }]}>One page about your shop, machines and what you make — to send buyers on WhatsApp or email.</Text>
       {!!fileError && <Text style={[s.meta, { color: c.idle }]}>{fileError}</Text>}

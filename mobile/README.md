@@ -36,7 +36,10 @@ machine goes idle. Built with Expo (React Native, SDK 58), one codebase for Andr
   it in by hand. Location from GPS, delivery distance, machines suggested from the kinds of work.
   "Try a sample shop" for demos.
 
-Data is stored on the phone for now. Login, sync and the AI lead hunting come next.
+**Account and sync** — sign in with an emailed 6-digit code (My shop → Sign in). The phone keeps working
+offline; changes go up to Supabase a few seconds later and changes from other devices come down. The first
+sign-in uploads the phone's shop; signing in on a new phone downloads it; if both have a shop, the app asks
+which to keep. Setup steps: [`supabase/README.md`](../supabase/README.md).
 
 The app talks to the server at `https://aiventre.vercel.app`. To point it somewhere else (e.g. a local
 `vercel dev`), start Expo with `EXPO_PUBLIC_API_URL=http://<your-mac-ip>:3000 npx expo start`.
@@ -90,6 +93,7 @@ npx expo export --platform web   # web build, used for screenshot testing
 - `src/lib/api.ts` — calls to the Aiventre server; `src/lib/drawing.ts` — camera / photo / PDF picking
 - `src/lib/find.ts` — runs "Find work" searches; `src/lib/location.ts` — shop location from GPS
 - `src/lib/assistant.ts` — the Ask Aiventre chat (agent loop and the tools that run on the phone)
+- `src/lib/supabase.ts`, `src/lib/auth.ts` — sign-in; `src/lib/sync.ts` — phone ↔ online database
 - `src/lib/share.ts` — capability profile PDF and backups
 - `src/app/buyer/[id].tsx` buyer page · `src/app/reply.tsx` sort a reply · `src/app/assistant.tsx` chat
 - `src/components/` — shared UI pieces and the machine card

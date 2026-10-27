@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import { requestBuyers } from './api';
 import { addDays, gap, type Lead, relativeDay, today, viewAll, viewMachine } from './model';
+import { getSession } from './auth';
 import { notifyNow } from './notify';
 import { getPrefs, setPrefs } from './prefs';
 import { addLeads, getData } from './store';
@@ -46,8 +47,8 @@ export async function findWork(machineId: string, auto = false) {
   const data = getData();
   const machine = data.machines.find((m) => m.id === machineId);
   if (!data.shop || !machine) return;
-  if (!getPrefs().accessCode) {
-    put(machineId, { state: 'failed', error: 'Add the access code first: My shop → AI.' });
+  if (!getPrefs().accessCode && !getSession()) {
+    put(machineId, { state: 'failed', error: 'Sign in or add the access code first: My shop.' });
     return;
   }
   put(machineId, { state: 'running' });
@@ -114,7 +115,7 @@ const AUTO_PER_DAY = 3; // each search costs credits, so keep a lid on it
 export function autoFind() {
   const prefs = getPrefs();
   const data = getData();
-  if (!prefs.autoFind || !prefs.accessCode || !data.shop) return;
+  if (!prefs.autoFind || (!prefs.accessCode && !getSession()) || !data.shop) return;
   const now = today();
   let count = prefs.autoDay === now ? prefs.autoCount : 0;
   const due = viewAll(data, now)

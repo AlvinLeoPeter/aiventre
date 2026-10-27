@@ -1,12 +1,14 @@
 import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Box, Button, Field, Label, Link, Rule, Screen, Section, Segmented, StatusPill, tap } from '@/components/ui';
 import { type PlanItem, type QuotePlan, runTask, shopForAI } from '@/lib/api';
 import { choosePdf, choosePhoto, type PickedDrawing, takePhoto } from '@/lib/drawing';
 import type { Status } from '@/lib/model';
-import { setAccessCode, usePrefs } from '@/lib/prefs';
+import { useAIReady } from '@/lib/auth';
+import { setAccessCode } from '@/lib/prefs';
 import { DEFAULT_RATE, type Edits, GST, inr, isOutsourced, MATERIAL_RATES, priceItem, type Rates, rateFor, shareQuotation } from '@/lib/quote';
 import { updateShop, useData } from '@/lib/store';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
@@ -48,7 +50,8 @@ function AccessCode() {
   return (
     <Box>
       <Text style={s.heading}>Connect to Aiventre’s AI</Text>
-      <Text style={s.body}>Enter the access code — the same one the Aiventre website asks for. You only do this once on this phone.</Text>
+      <Text style={s.body}>Sign in with your email, or enter the access code (the same one the website asks for).</Text>
+      <Button label="Sign in with email" kind="secondary" onPress={() => router.push('/account')} />
       <Field label="Access code" value={code} onChangeText={setCode} autoCapitalize="none" autoCorrect={false} secureTextEntry />
       <Button label="Save code" disabled={!code.trim()} onPress={() => setAccessCode(code)} />
     </Box>
@@ -231,7 +234,7 @@ export default function QuoteScreen() {
   const { c } = useTheme();
   const s = useStyles();
   const data = useData();
-  const { accessCode } = usePrefs();
+  const aiReady = useAIReady();
   const shop = data.shop!;
 
   const [drawing, setDrawing] = useState<PickedDrawing | null>(null);
@@ -282,7 +285,7 @@ export default function QuoteScreen() {
   const saveRates = () =>
     updateShop({ ...shop, rate: num(shopRate) || shop.rate, materialRates: Object.fromEntries(Object.entries(matRates).map(([k, v]) => [k, num(v)])) });
 
-  if (!accessCode) {
+  if (!aiReady) {
     return (
       <Screen title="Quote" sub="Drawing or RFQ in — plan and price out">
         <AccessCode />
