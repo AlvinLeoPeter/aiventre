@@ -129,6 +129,12 @@ export default function MachineScreen() {
       />
 
       <FindWorkButton view={view} />
+      <Button
+        label={`Ask the machine expert about ${machine.name}`}
+        icon="construct-outline"
+        kind="secondary"
+        onPress={() => router.push({ pathname: '/expert', params: { machine: machine.id } })}
+      />
 
       <Section title="Machine" />
       <Box style={{ gap: S.lg }}>

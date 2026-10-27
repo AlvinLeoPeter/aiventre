@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { loadChat } from '@/lib/assistant';
+import { loadExpert } from '@/lib/expert';
 import { autoFind } from '@/lib/find';
 import { onNotificationTap } from '@/lib/notify';
 import { startSync } from '@/lib/sync';
@@ -21,6 +22,7 @@ export default function RootLayout() {
   useEffect(() => {
     loadPrefs().then(loadData).then(startSync);
     loadChat();
+    loadExpert();
   }, []);
 
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="buyer/new" options={{ presentation: 'modal', title: 'Add a buyer' }} />
         <Stack.Screen name="reply" options={{ presentation: 'modal', title: 'Sort a reply' }} />
         <Stack.Screen name="assistant" options={{ headerShown: false }} />
+        <Stack.Screen name="expert" options={{ headerShown: false }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
         <Stack.Screen name="bills" options={{ title: 'Bills' }} />
         <Stack.Screen name="invoice/[id]" options={{ title: '' }} />

@@ -89,7 +89,6 @@ export default handler(async ({ shop, needs }) => {
     const turn = await runTurn({
       max_tokens: 32000,
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-      thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 8 }, REPORT],
       messages,

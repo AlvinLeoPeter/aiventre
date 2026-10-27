@@ -6,20 +6,30 @@ import { createRemoteJWKSet, jwtVerify } from 'jose'
    never reaches the browser.
 ---------------------------------------------------------------- */
 
-// Which model does which job. The hard jobs (researching buyers, reading drawings)
-// get Opus; the simple ones (profile, emails, replies) get the cheaper, faster Sonnet.
-// Each can be changed in Vercel without touching code; ANTHROPIC_MODEL sets them all.
+// Which model does which job. The hard jobs (researching buyers, reading drawings,
+// machining questions) get Opus; the simple ones (profile, emails, replies) get the
+// cheaper, faster Sonnet. Each can be changed in Vercel without touching code;
+// ANTHROPIC_MODEL sets them all.
 const ALL = process.env.ANTHROPIC_MODEL
 export const MODELS = {
-  agent: process.env.ANTHROPIC_MODEL_AGENT || ALL || 'claude-opus-5',
-  quote: process.env.ANTHROPIC_MODEL_QUOTE || ALL || 'claude-opus-5',
-  simple: process.env.ANTHROPIC_MODEL_SIMPLE || ALL || 'claude-sonnet-5',
+  agent: process.env.ANTHROPIC_MODEL_AGENT || ALL || 'claude-opus-5-5',
+  quote: process.env.ANTHROPIC_MODEL_QUOTE || ALL || 'claude-opus-5-5',
+  expert: process.env.ANTHROPIC_MODEL_EXPERT || ALL || 'claude-opus-5-5',
+  simple: process.env.ANTHROPIC_MODEL_SIMPLE || ALL || 'claude-sonnet-5-5',
 }
 
-// Server-side refusal fallback for Opus/Fable: if the model declines, the API re-runs
-// the request on a fallback model inside the same call.
-const withFallback = (model) =>
-  /^claude-(opus|fable)/.test(model) ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}
+// Server-side refusal fallback: if the model declines, the API re-runs the request on a
+// fallback model inside the same call.
+const fallbackBetas = (model) => (/^claude-(opus|fable|sonnet-5-5)/.test(model) ? ['server-side-fallback-2026-07-01'] : [])
+const withFallback = (model) => {
+  const betas = fallbackBetas(model)
+  return betas.length ? { betas, fallbacks: 'default' } : {}
+}
+
+// Newer models check that a conversation's history hasn't changed since their earlier
+// reasoning was written. Ours only grows, but resumed turns are folded together for the
+// app, so if a check ever fails we'd rather lose that old reasoning than the request.
+const KEEP_GOING = { betas: ['thinking-binding-controls-2026-08-01'], block_binding: { prefix_mismatch_behavior: 'drop_block' } }
 
 // Server tools (web search / fetch) can pause a long turn; resume a few times.
 const MAX_CONTINUATIONS = 4
@@ -83,13 +93,18 @@ export async function checkAccess(req, keys) {
  * otherwise risk HTTP timeouts) and resumes `pause_turn` server-side, so the
  * caller only ever sees a finished turn: end_turn, tool_use, max_tokens or refusal.
  */
-export async function runTurn(params) {
+export async function runTurn({ model = MODELS.agent, ...params }) {
   const messages = [...params.messages]
+  const request = {
+    model,
+    ...params,
+    ...withFallback(model),
+    betas: [...fallbackBetas(model), ...KEEP_GOING.betas],
+    thinking: { type: 'adaptive', block_binding: KEEP_GOING.block_binding },
+  }
   let message
   for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
-    message = await getClient()
-      .beta.messages.stream({ model: MODELS.agent, ...withFallback(MODELS.agent), ...params, messages })
-      .finalMessage()
+    message = await getClient().beta.messages.stream({ ...request, messages }).finalMessage()
     if (message.stop_reason !== 'pause_turn') break
     messages.push({ role: 'assistant', content: message.content })
   }
