@@ -91,6 +91,7 @@ export type Checks = {
   phone: 'on_site' | 'not_found' | 'none';
   registration: { kind: 'GSTIN' | 'CIN'; id: string; state?: string; onSite?: boolean; stateMatches?: boolean; invalid?: boolean } | null;
   passed: number; // 0–3: link, contact, registration
+  filled?: { email?: string; phone?: string }; // contacts found on their own pages
 };
 
 export type Flag = 'wrong_number' | 'wrong_email' | 'fake';

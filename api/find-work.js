@@ -19,6 +19,8 @@ How to work:
 - Skip companies in "known", and never list the shop itself. Skip companies in "avoid" (the owner found them wrong or closed) and don't rely on pages from "bad_sources" (they gave wrong results before).
 - If the company's GSTIN or CIN is printed on a page you read (often in the website footer or on a directory listing), include it exactly; otherwise leave it empty. Never guess one.
 - Aim for 4 to 8 good fits rather than many weak ones. Be quick: a few targeted searches, then report.
+- Only report companies within delivery_distance_km of the shop (when it's a number). Closer is better.
+- Always give the company's own website: the app opens its contact page itself and fills in a phone or email you couldn't reach, so spend your budget on finding the right companies rather than on contact pages.
 - For each buyer write a short first message the owner can send on WhatsApp or email (under 70 words, plain Indian business English, no hype): who they are, the matching capability and machine, that it has capacity from the free date, and one clear ask (send a drawing and quantity for a quote). Sign with the owner's name and shop. No invented facts or certifications.
 - When done, call report_buyers exactly once. If you found little, report what you have and say why in the summary.`
 
@@ -67,7 +69,7 @@ export default handler(async ({ shop, machine, gap, known = [], avoid = [], bad_
   const search = {
     type: 'web_search_20260209',
     name: 'web_search',
-    max_uses: 6,
+    max_uses: 8,
     user_location: { type: 'approximate', country: 'IN', timezone: 'Asia/Kolkata', ...(shop.city && { city: str(shop.city, 60) }), ...(shop.state && { region: str(shop.state, 60) }) },
   }
   const brief = {
@@ -96,11 +98,11 @@ export default handler(async ({ shop, machine, gap, known = [], avoid = [], bad_
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
-      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 }, REPORT],
+      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6 }, REPORT],
       messages,
     })
     const report = turn.content.find((b) => b.type === 'tool_use' && b.name === 'report_buyers')
-    if (report) return checked(report.input.buyers ?? [], report.input.summary ?? '')
+    if (report) return checked(report.input.buyers ?? [], report.input.summary ?? '', Number(shop.reach) || 0)
     if (turn.stop_reason === 'refusal') throw new HttpError(422, 'The AI declined this search.')
     messages.push({ role: 'assistant', content: turn.content })
     messages.push({ role: 'user', content: 'Now call report_buyers with what you found. An empty list is fine if nothing fits.' })
@@ -113,14 +115,17 @@ export default handler(async ({ shop, machine, gap, known = [], avoid = [], bad_
  * whose website doesn't load can't be confirmed at all, so it's dropped; the rest carry
  * their checks so the app can show what was confirmed.
  */
-async function checked(buyers, summary) {
-  const checks = await checkBuyers(buyers)
+async function checked(buyers, summary, reach) {
+  // Well past the owner's delivery distance is no use, however good the fit.
+  const near = buyers.filter((b) => !reach || !b.distance_km || b.distance_km <= reach * 1.5)
+  const tooFar = buyers.length - near.length
+  const checks = await checkBuyers(near)
   const kept = []
   let dropped = 0
-  buyers.forEach((b, i) => {
+  near.forEach((b, i) => {
     const c = checks[i]
     if (c && c.link === 'broken' && c.website !== 'ok') dropped++
-    else kept.push({ ...b, checks: c })
+    else kept.push({ ...b, ...c?.filled, checks: c })
   })
-  return { buyers: kept, summary, dropped }
+  return { buyers: kept, summary, dropped, tooFar }
 }

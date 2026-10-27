@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { LeadRow } from '@/components/lead-card';
 import { Box, Button, Chip, Link, Rule, Screen, Section } from '@/components/ui';
-import { findWork, useSearches } from '@/lib/find';
+import { clearSearch, findWork, useSearches } from '@/lib/find';
 import { followUpDue, type Lead } from '@/lib/model';
 import { useData } from '@/lib/store';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
@@ -24,6 +25,20 @@ function Stat({ value, label, first }: { value: number; label: string; first?: b
       <Text style={s.statValue}>{value}</Text>
       <Text style={s.meta}>{label}</Text>
     </View>
+  );
+}
+
+/** The AI's note about a search: three lines, the rest on tap. */
+function Summary({ text }: { text: string }) {
+  const s = useStyles();
+  const [open, setOpen] = useState(false);
+  return (
+    <Pressable onPress={() => setOpen((x) => !x)}>
+      <Text style={s.meta} numberOfLines={open ? undefined : 3}>
+        {text}
+      </Text>
+      {text.length > 160 && <Text style={[s.meta, { fontWeight: '600', marginTop: 2 }]}>{open ? 'Less' : 'More'}</Text>}
+    </Pressable>
   );
 }
 
@@ -70,10 +85,15 @@ export default function BuyersScreen() {
           </Box>
         ) : (
           <Box key={id}>
-            <Text style={s.strong}>
-              {st.added ? `${st.added} new buyer${st.added === 1 ? '' : 's'} for ${name(id)}` : `Nothing new for ${name(id)} this time`}
-            </Text>
-            {!!st.summary && <Text style={s.meta}>{st.summary}</Text>}
+            <View style={s.between}>
+              <Text style={[s.strong, { flex: 1 }]}>
+                {st.added ? `${st.added} new buyer${st.added === 1 ? '' : 's'} for ${name(id)}` : `Nothing new for ${name(id)} this time`}
+              </Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Hide" hitSlop={12} onPress={() => clearSearch(id)}>
+                <Ionicons name="close" size={20} color={c.muted} />
+              </Pressable>
+            </View>
+            {!!st.summary && <Summary text={st.summary} />}
           </Box>
         ),
       )}
@@ -127,6 +147,7 @@ export default function BuyersScreen() {
 
 const useStyles = makeStyles((c) => ({
   row: { flexDirection: 'row', gap: S.sm },
+  between: { flexDirection: 'row', alignItems: 'flex-start', gap: S.md },
   inline: { flexDirection: 'row', alignItems: 'center', gap: S.md },
   heading: { ...type.heading, color: c.text },
   strong: { ...type.strong, color: c.text },
