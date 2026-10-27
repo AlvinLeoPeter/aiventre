@@ -297,7 +297,15 @@ export function flagLead(id: string, flag: Flag, label: string) {
 /** Saves what the server confirmed about some buyers. */
 export function saveChecks(results: { id: string; checks: Lead['checks'] }[]) {
   const byId = new Map(results.map((r) => [r.id, r.checks]));
-  set({ ...data, leads: (data.leads ?? []).map((l) => (byId.has(l.id) ? { ...l, checks: byId.get(l.id) } : l)) });
+  set({
+    ...data,
+    leads: (data.leads ?? []).map((l) => {
+      if (!byId.has(l.id)) return l;
+      const checks = byId.get(l.id);
+      // Contacts the checker found on their own website fill the gaps, never overwrite.
+      return { ...l, checks, email: l.email || checks?.filled?.email || '', phone: l.phone || checks?.filled?.phone || '' };
+    }),
+  });
 }
 
 /* ---------------- backup ---------------- */

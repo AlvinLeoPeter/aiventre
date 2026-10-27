@@ -139,6 +139,34 @@ const last10 = (s) => s.replace(/\D/g, '').slice(-10)
 /** Every phone-looking number on the pages, as its last 10 digits. */
 const phonesIn = (text) => new Set((text.match(/\+?\d[\d\s\-().]{8,17}\d/g) ?? []).map(last10).filter((d) => d.length === 10))
 
+// Purchase contacts first: they're who buys job work.
+const EMAIL_PREFERENCE = ['purchase', 'procurement', 'sourcing', 'vendor', 'supply', 'enquir', 'inquir', 'info', 'sales', 'contact', 'admin']
+
+/** The best business email printed on the company's pages: their own domain, purchase desk first. */
+function emailIn(text, siteDomain) {
+  const all = [...new Set(text.match(/[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/g) ?? [])].filter(
+    (e) => !/\.(png|jpe?g|gif|svg|webp)$/.test(e) && !/(sentry|wixpress|example|domain)\./.test(e),
+  )
+  const theirs = all.filter((e) => sameSite(e.split('@')[1], siteDomain))
+  const pool = theirs.length ? theirs : all.filter((e) => FREE_MAIL.has(e.split('@')[1]))
+  const rank = (e) => {
+    const i = EMAIL_PREFERENCE.findIndex((w) => e.startsWith(w))
+    return i < 0 ? EMAIL_PREFERENCE.length : i
+  }
+  return pool.sort((a, b) => rank(a) - rank(b))[0] ?? ''
+}
+
+/** The first Indian phone number printed on their pages: a mobile, or a landline with its STD code. */
+function phoneIn(text) {
+  const candidates = text.match(/(?:\+?91[\s-]?)?(?:[6-9]\d{4}[\s-]?\d{5}|0\d{2,4}[\s-]?\d{2,4}[\s-]?\d{3,4})/g) ?? []
+  // A mobile is 10 digits; a landline is 0 + STD code + number, 11 digits in all.
+  const ok = candidates.find((c) => {
+    const d = c.replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '')
+    return /^[6-9]\d{9}$/.test(d) || /^0\d{10}$/.test(d)
+  })
+  return ok ? ok.trim() : ''
+}
+
 /* ---------------- GSTIN and CIN ---------------- */
 
 const GST_STATES = {
@@ -205,7 +233,8 @@ const sameState = (a = '', b = '') => {
  * Checks one buyer. Returns:
  * { at, link: 'ok'|'no_mention'|'broken'|'none', website: 'ok'|'down'|'none',
  *   email: 'official'|'free'|'other'|'none', phone: 'on_site'|'not_found'|'none',
- *   registration: { kind, id, state, onSite, stateMatches } | { kind, id, invalid } | null, passed: 0..3 }
+ *   registration: { kind, id, state, onSite, stateMatches } | { kind, id, invalid } | null, passed: 0..3,
+ *   filled: { email?, phone? } — contacts the AI left blank, found on the company's own pages }
  */
 export async function checkBuyer(b, open = fetchPage) {
   const company = String(b.company || '').slice(0, 120)
@@ -225,10 +254,24 @@ export async function checkBuyer(b, open = fetchPage) {
   const link = !source ? 'none' : !source.ok ? 'broken' : source.text && !mentions(source.text, company) ? 'no_mention' : 'ok'
   const website = !b.website ? 'none' : site?.ok ? 'ok' : 'down'
 
-  const emailDomain = String(b.email || '').split('@')[1]?.toLowerCase() ?? ''
   const siteDomain = domainOf(site?.url || b.website || '')
-  const email = !b.email ? 'none' : FREE_MAIL.has(emailDomain) ? 'free' : sameSite(emailDomain, siteDomain) ? 'official' : 'other'
-  const phoneDigits = last10(String(b.phone || ''))
+
+  // Missing contacts: take them from the company's own pages (never from a directory,
+  // which lists other companies' numbers too).
+  const own = [contactPage, site].filter((p) => p?.ok).map((p) => p.text).join(' ')
+  const filled = {}
+  if (!b.email) {
+    const found = emailIn(own, siteDomain)
+    if (found) filled.email = found
+  }
+  if (!b.phone) {
+    const found = phoneIn(own)
+    if (found) filled.phone = found
+  }
+  const emailAddr = String(b.email || filled.email || '')
+  const emailDomain = emailAddr.split('@')[1]?.toLowerCase() ?? ''
+  const email = !emailAddr ? 'none' : FREE_MAIL.has(emailDomain) ? 'free' : sameSite(emailDomain, siteDomain) ? 'official' : 'other'
+  const phoneDigits = last10(String(b.phone || filled.phone || ''))
   const phone = phoneDigits.length < 10 ? 'none' : phonesIn(pages).has(phoneDigits) ? 'on_site' : 'not_found'
 
   const reg = registrationIn(pages, [b.gstin, b.cin])
@@ -239,7 +282,7 @@ export async function checkBuyer(b, open = fetchPage) {
     Number(email === 'official' || phone === 'on_site') +
     Number(!!registration && !registration.invalid && registration.stateMatches)
 
-  return { at: new Date().toISOString(), link, website, email, phone, registration, passed }
+  return { at: new Date().toISOString(), link, website, email, phone, registration, passed, filled }
 }
 
 /** Checks several buyers at once, a few at a time. */

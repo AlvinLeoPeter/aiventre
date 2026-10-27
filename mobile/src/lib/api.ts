@@ -77,7 +77,8 @@ export type BuyerResult = {
   checks?: Checks | null;
 };
 
-export const requestBuyers = (body: unknown) => post<{ buyers: BuyerResult[]; summary: string; dropped?: number }>('/api/find-work', body);
+export const requestBuyers = (body: unknown) =>
+  post<{ buyers: BuyerResult[]; summary: string; dropped?: number; tooFar?: number }>('/api/find-work', body);
 
 /** Re-checks buyers that didn't come from Find work (added by hand, saved by the assistant). No AI, no credits. */
 export const requestChecks = (buyers: Lead[]) =>

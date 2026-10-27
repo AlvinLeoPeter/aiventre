@@ -27,6 +27,14 @@ const subscribe = (l: () => void) => {
 };
 export const useSearches = () => useSyncExternalStore(subscribe, () => searches, () => searches);
 
+/** Hides a finished search's note. */
+export function clearSearch(machineId: string) {
+  if (searches[machineId]?.state === 'running') return;
+  const { [machineId]: _, ...rest } = searches;
+  searches = rest;
+  listeners.forEach((l) => l());
+}
+
 const host = (url: string) => url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0].toLowerCase();
 
 /** Sites that gave the owner a fake company or a wrong contact. */
@@ -46,7 +54,7 @@ export async function findWork(machineId: string, auto = false) {
   try {
     const free = gap(viewMachine(data, machine));
     if (free) setPrefs({ searched: { ...getPrefs().searched, [machineId]: free.from } });
-    const { buyers, summary, dropped } = await requestBuyers({
+    const { buyers, summary, dropped, tooFar } = await requestBuyers({
       shop: { ...data.shop, machines: data.machines.map((m) => ({ type: m.type, details: m.details })) },
       machine: { name: machine.name, type: machine.type, details: machine.details },
       gap: free,
@@ -74,8 +82,13 @@ export async function findWork(machineId: string, auto = false) {
         message: b.message,
       })),
     );
-    const note = dropped ? ` ${dropped} more couldn’t be confirmed (their pages didn’t open), so they were left out.` : '';
-    put(machineId, { state: 'done', added, summary: `${summary}${note}`.trim() });
+    const note = [
+      dropped ? `${dropped} more couldn’t be confirmed (their pages didn’t open), so they were left out.` : '',
+      tooFar ? `${tooFar} were too far away for your delivery distance, so they were left out.` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    put(machineId, { state: 'done', added, summary: `${summary} ${note}`.trim() });
     if (added && (auto || AppState.currentState !== 'active')) {
       const when = free && free.from > today() ? ` from ${relativeDay(free.from)}` : '';
       notifyNow(
