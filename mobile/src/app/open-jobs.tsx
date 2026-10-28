@@ -125,7 +125,7 @@ export default function OpenJobsScreen() {
         {busy && (
           <View style={s.line}>
             <ActivityIndicator color={c.muted} />
-            <Text style={[s.meta, { flex: 1 }]}>Checking tender portals and buy requirements, then opening each one — about 1 to 3 minutes.</Text>
+            <Text style={[s.meta, { flex: 1 }]}>Checking tender portals and buy requirements, then opening each one — about 1 to 3 minutes. Keep Aiventre open until it’s done.</Text>
           </View>
         )}
         {!!error && <Text style={[s.meta, { color: c.idle }]}>{error}</Text>}

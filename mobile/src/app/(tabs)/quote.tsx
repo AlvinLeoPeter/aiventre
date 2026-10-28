@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,12 +10,17 @@ import type { Status } from '@/lib/model';
 import { useAIReady } from '@/lib/auth';
 import { setAccessCode } from '@/lib/prefs';
 import { DEFAULT_SAC, setInvoiceDraft } from '@/lib/invoice';
+import { getKept, keep } from '@/lib/keep';
 import { DEFAULT_RATE, type Edits, GST, inr, isOutsourced, MATERIAL_RATES, priceItem, type Rates, rateFor, shareQuotation, takeQuoteDraft } from '@/lib/quote';
 import { needsFromPlan, setPendingNeeds } from '@/lib/source';
 import { updateShop, useData } from '@/lib/store';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
 
 const num = (s: string) => Number(s) || 0;
+
+/** The quote on screen, kept across app restarts. A big drawing isn't kept: it's picked again to re-plan. */
+type KeptQuote = { plan: QuotePlan | null; edits: Edits[]; notes: string; customer: string; margin: string; gst: 'yes' | 'no' };
+const KEEP_DRAWING_UNDER = 900_000; // characters of base64, so the saved quote stays one small item
 
 const FIT: Record<PlanItem['fits_shop'], { status: Status; text: string }> = {
   yes: { status: 'running', text: 'Your shop can make it' },
@@ -239,19 +244,20 @@ export default function QuoteScreen() {
   const aiReady = useAIReady();
   const shop = data.shop!;
 
-  const [drawing, setDrawing] = useState<PickedDrawing | null>(null);
-  const [notes, setNotes] = useState('');
+  const [kept] = useState(() => getKept<KeptQuote>('quote'));
+  const [drawing, setDrawing] = useState<PickedDrawing | null>(() => getKept<PickedDrawing>('quote-drawing') ?? null);
+  const [notes, setNotes] = useState(kept?.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [plan, setPlan] = useState<QuotePlan | null>(null);
-  const [edits, setEdits] = useState<Edits[]>([]);
+  const [plan, setPlan] = useState<QuotePlan | null>(kept?.plan ?? null);
+  const [edits, setEdits] = useState<Edits[]>(kept?.edits ?? []);
 
   const [shopRate, setShopRate] = useState(String(shop.rate ?? DEFAULT_RATE));
-  const [margin, setMargin] = useState('15');
+  const [margin, setMargin] = useState(kept?.margin ?? '15');
   const [matRates, setMatRates] = useState<Record<string, string>>(() =>
     Object.fromEntries(Object.entries({ ...MATERIAL_RATES, ...shop.materialRates }).map(([k, v]) => [k, String(v)])),
   );
-  const [gst, setGst] = useState<'yes' | 'no'>('yes');
+  const [gst, setGst] = useState<'yes' | 'no'>(kept?.gst ?? 'yes');
 
   // Opened from an open job: start a fresh quote with its details.
   useFocusEffect(
@@ -264,8 +270,16 @@ export default function QuoteScreen() {
       setNotes(draft);
     }, []),
   );
-  const [customer, setCustomer] = useState('');
+  const [customer, setCustomer] = useState(kept?.customer ?? '');
   const [shareError, setShareError] = useState('');
+
+  // A plan costs credits: keep the quote until the owner starts a new one, even if the app closes.
+  useEffect(() => {
+    keep('quote', plan || notes.trim() ? { plan, edits, notes, customer, margin, gst } : null);
+  }, [plan, edits, notes, customer, margin, gst]);
+  useEffect(() => {
+    keep('quote-drawing', drawing && drawing.data.length < KEEP_DRAWING_UNDER ? drawing : null);
+  }, [drawing]);
 
   const rates: Rates = { shopRate: num(shopRate), margin: num(margin), materials: Object.fromEntries(Object.entries(matRates).map(([k, v]) => [k, num(v)])) };
 
@@ -344,7 +358,7 @@ export default function QuoteScreen() {
         {busy && (
           <View style={s.row}>
             <ActivityIndicator color={c.muted} />
-            <Text style={s.meta}>Reading every sheet and planning each item — up to two minutes for a big RFQ.</Text>
+            <Text style={[s.meta, { flex: 1 }]}>Reading every sheet and planning each item — up to two minutes for a big RFQ. Keep Aiventre open until it’s done.</Text>
           </View>
         )}
         {!!error && <Text style={[s.body, { color: c.idle }]}>{error}</Text>}

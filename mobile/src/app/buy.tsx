@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { openUrl, telUrl, whatsappNumber } from '@/components/lead-card';
 import { Box, Button, Field, Link, Rule, Screen, Section, Segmented, success } from '@/components/ui';
 import { useAIReady } from '@/lib/auth';
+import { getKept, keep } from '@/lib/keep';
 import { confirm } from '@/lib/confirm';
 import { type Supplier, today } from '@/lib/model';
 import { inr } from '@/lib/quote';
@@ -130,14 +131,19 @@ export default function BuyScreen() {
   const s = useStyles();
   const data = useData();
   const aiReady = useAIReady();
-  const [needs, setNeeds] = useState<Need[]>(() => peekPendingNeeds() ?? []);
+  // The last search is kept across app restarts (it cost credits); a new list from a quote replaces it.
+  const [kept] = useState(() => (peekPendingNeeds() ? undefined : getKept<{ needs: Need[]; result: { needs: Need[]; found: SourcingResult } | null }>('buy')));
+  const [needs, setNeeds] = useState<Need[]>(() => peekPendingNeeds() ?? kept?.needs ?? []);
   useEffect(clearPendingNeeds, []);
   const [kind, setKind] = useState<Need['kind']>('tool');
   const [item, setItem] = useState('');
   const [qty, setQty] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ needs: Need[]; found: SourcingResult } | null>(null);
+  const [result, setResult] = useState<{ needs: Need[]; found: SourcingResult } | null>(kept?.result ?? null);
+  useEffect(() => {
+    keep('buy', needs.length || result ? { needs, result } : null);
+  }, [needs, result]);
   const suppliers = data.suppliers ?? [];
 
   const add = () => {
@@ -211,7 +217,10 @@ export default function BuyScreen() {
       {busy && (
         <View style={s.row}>
           <ActivityIndicator color={c.muted} />
-          <Text style={[s.meta, { flex: 1 }]}>Searching Indian suppliers near {data.shop?.city || 'you'} and opening each page to check the price — about a minute.</Text>
+          <Text style={[s.meta, { flex: 1 }]}>
+            Searching Indian suppliers near {data.shop?.city || 'you'} and opening each page to check the price — about a minute. Keep Aiventre open
+            until it’s done.
+          </Text>
         </View>
       )}
       {!!error && <Text style={[s.body, { color: c.idle }]}>{error}</Text>}
