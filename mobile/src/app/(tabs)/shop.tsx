@@ -10,6 +10,7 @@ import { useSession } from '@/lib/auth';
 import { confirm } from '@/lib/confirm';
 import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
+import { clearOpenJobs } from '@/lib/open-jobs';
 import { clearPhotos, getPhotos, usePhotos } from '@/lib/photos';
 import { setAccessCode, setAutoFind, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
 import { pickBackup, shareBackup, shareProfile } from '@/lib/share';
@@ -375,6 +376,7 @@ export default function ShopScreen() {
           onPress={() =>
             confirm('Load the sample shop?', 'This replaces your machines, jobs and buyers with a demo shop.', 'Load', () => {
               clearPhotos();
+              clearOpenJobs();
               loadDemo();
               router.replace('/');
             })
@@ -386,6 +388,7 @@ export default function ShopScreen() {
           onPress={() =>
             confirm('Reset everything?', 'All machines, jobs, buyers and shop details on this phone will be deleted.', 'Reset', () => {
               clearPhotos();
+              clearOpenJobs();
               resetAll();
               router.replace('/onboarding');
             })

@@ -4,9 +4,10 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { LeadRow } from '@/components/lead-card';
-import { Box, Button, Chip, Link, Rule, Screen, Section } from '@/components/ui';
+import { Box, Button, Chip, Link, Press, Rule, Screen, Section } from '@/components/ui';
 import { clearSearch, findWork, useSearches } from '@/lib/find';
 import { followUpDue, type Lead } from '@/lib/model';
+import { useOpenJobs } from '@/lib/open-jobs';
 import { useData } from '@/lib/store';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
@@ -42,6 +43,25 @@ function Summary({ text }: { text: string }) {
   );
 }
 
+/** Posted work (tenders, buy requirements) sits next to the buyers Aiventre finds. */
+function OpenJobsCard() {
+  const { c } = useTheme();
+  const s = useStyles();
+  const saved = useOpenJobs().jobs.filter((j) => j.saved).length;
+  return (
+    <Press onPress={() => router.push('/open-jobs')} scale={0.98} label="Open jobs">
+      <Box style={s.inline}>
+        <Ionicons name="megaphone-outline" size={22} color={c.muted} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.strong}>Open jobs</Text>
+          <Text style={s.meta}>{saved ? `${saved} saved · ` : ''}Tenders and buy requirements posted now</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={c.muted} />
+      </Box>
+    </Press>
+  );
+}
+
 export default function BuyersScreen() {
   const { c } = useTheme();
   const s = useStyles();
@@ -67,6 +87,7 @@ export default function BuyersScreen() {
         <Button label="Ask Aiventre" icon="sparkles-outline" small flex onPress={() => router.push('/assistant')} />
         <Button label="Sort a reply" icon="chatbubble-ellipses-outline" kind="secondary" small flex onPress={() => router.push('/reply')} />
       </View>
+      <OpenJobsCard />
 
       {activity.map(([id, st]) =>
         st.state === 'running' ? (

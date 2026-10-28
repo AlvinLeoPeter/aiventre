@@ -69,6 +69,28 @@ export async function bookFollowUp(company: string, day: string, leadId: string)
   }
 }
 
+/** A saved open job closes soon: two days before, or on the morning of the last day if that's sooner. */
+export async function bookDeadline(title: string, closing: string): Promise<string | null> {
+  try {
+    const last = parseDay(closing);
+    last.setHours(REMIND_HOUR, 0, 0, 0);
+    const early = new Date(last);
+    early.setDate(early.getDate() - 2);
+    const when = early.getTime() > Date.now() ? early : last;
+    if (when.getTime() <= Date.now() || !(await allowed())) return null;
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title: when === last ? 'Closes today' : 'Closes in 2 days',
+        body: `${title.slice(0, 90)} — quote or bid before it closes.`,
+        data: { url: '/open-jobs' },
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** Tells the owner right away, e.g. when a search finds buyers. Tapping it opens `url`. */
 export async function notifyNow(title: string, body: string, url: string) {
   try {

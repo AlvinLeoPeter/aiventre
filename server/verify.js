@@ -330,10 +330,12 @@ export function priceOnPage(text, price) {
   return before.test(text) || after.test(text)
 }
 
+const linkState = (page) => (!page ? 'none' : page.ok ? 'ok' : BLOCKED.has(page.reason) ? 'blocked' : 'broken')
+
 /** Opens the page an offer cites (and the supplier's site if that page won't load). */
 export async function checkOffer(o, open = fetchPage) {
   const page = o.url ? await open(String(o.url)) : null
-  const pageState = !page ? 'none' : page.ok ? 'ok' : BLOCKED.has(page.reason) ? 'blocked' : 'broken'
+  const pageState = linkState(page)
   let website = o.website ? 'unchecked' : 'none'
   if (pageState === 'ok') website = 'ok'
   else if (o.website) website = (await open(String(o.website))).ok ? 'ok' : 'down'
@@ -347,3 +349,14 @@ export async function checkOffer(o, open = fetchPage) {
 
 export const checkOffers = (list, concurrency = 4, open = fetchPage) =>
   pool(list, (o) => checkOffer(o, open), concurrency, { at: new Date().toISOString(), page: 'none', website: 'none', priceSeen: false })
+
+/* ---------------- posted jobs ---------------- */
+
+/** Opens the page a posted job (tender, buy requirement) was found on: does it still load? */
+export async function checkJob(j, open = fetchPage) {
+  const page = j.url ? await open(String(j.url)) : null
+  return { at: new Date().toISOString(), page: linkState(page) }
+}
+
+export const checkJobs = (list, concurrency = 4, open = fetchPage) =>
+  pool(list, (j) => checkJob(j, open), concurrency, { at: new Date().toISOString(), page: 'none' })
