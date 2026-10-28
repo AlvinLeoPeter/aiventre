@@ -43,6 +43,29 @@ function Summary({ text }: { text: string }) {
   );
 }
 
+/** Another search for any working machine; companies already on the list are skipped. */
+function FindMore() {
+  const s = useStyles();
+  const data = useData();
+  const searches = useSearches();
+  const machines = data.machines.filter((m) => !m.maintenance);
+  if (!machines.length || !(data.leads ?? []).length) return null;
+  return (
+    <View style={{ gap: S.sm }}>
+      <Text style={s.meta}>Find more buyers for:</Text>
+      <View style={s.chips}>
+        {machines.map((m) => (
+          <Chip
+            key={m.id}
+            label={searches[m.id]?.state === 'running' ? `${m.name}…` : m.name}
+            onPress={() => searches[m.id]?.state !== 'running' && findWork(m.id)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 /** Posted work (tenders, buy requirements) sits next to the buyers Aiventre finds. */
 function OpenJobsCard() {
   const { c } = useTheme();
@@ -88,6 +111,7 @@ export default function BuyersScreen() {
         <Button label="Sort a reply" icon="chatbubble-ellipses-outline" kind="secondary" small flex onPress={() => router.push('/reply')} />
       </View>
       <OpenJobsCard />
+      <FindMore />
 
       {activity.map(([id, st]) =>
         st.state === 'running' ? (
@@ -170,6 +194,7 @@ const useStyles = makeStyles((c) => ({
   row: { flexDirection: 'row', gap: S.sm },
   between: { flexDirection: 'row', alignItems: 'flex-start', gap: S.md },
   inline: { flexDirection: 'row', alignItems: 'center', gap: S.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
   heading: { ...type.heading, color: c.text },
   strong: { ...type.strong, color: c.text },
   body: { ...type.body, color: c.muted },
