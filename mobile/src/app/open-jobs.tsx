@@ -144,6 +144,16 @@ export default function OpenJobsScreen() {
           <Section title={fresh.length ? `Found · ${fresh.length}` : 'Last search'} />
           <Text style={s.body}>{last.summary}</Text>
           {last.widened && <Text style={s.meta}>Not much in your state, so this includes the rest of India.</Text>}
+          {last.can_widen && (
+            <Button
+              label={busy ? 'Searching…' : 'Search the rest of India too'}
+              icon="globe-outline"
+              kind="secondary"
+              small
+              disabled={busy}
+              onPress={() => searchOpenJobs(focus.trim(), 'india')}
+            />
+          )}
           {fresh.map((j) => (
             <JobCard key={j.id} j={j} />
           ))}

@@ -360,6 +360,43 @@ export function priceForSupplier(text, price, supplier) {
   return false
 }
 
+/* ---------------- pages the AI's search already opened ---------------- */
+
+const urlKey = (raw) => {
+  try {
+    const u = new URL(raw)
+    return `${u.host.replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '')}${u.search}`.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+/** The text of every page the AI opened with web_fetch during its search, by address. */
+export function fetchedPages(blocks, into = new Map()) {
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (node.type === 'web_fetch_result' && typeof node.url === 'string') {
+      const source = node.content?.source
+      if (typeof source?.data === 'string' && source.media_type !== 'application/pdf') into.set(urlKey(node.url), source.data)
+    }
+    for (const v of Object.values(node)) if (v && typeof v === 'object') walk(v)
+  }
+  walk(blocks)
+  return into
+}
+
+/**
+ * Opens a page ourselves; if the site turns our server away (some marketplaces block cloud
+ * servers), uses the copy the AI's search fetched from it minutes earlier instead.
+ */
+export const openWithSearchPages = (pages, open = fetchPage) => async (raw) => {
+  const page = await open(raw)
+  if (page.ok || !pages?.size) return page
+  const text = pages.get(urlKey(raw))
+  return text ? { ok: true, url: raw, text: htmlToText(text), viaSearch: true } : page
+}
+
 const linkState = (page) => (!page ? 'none' : page.ok ? 'ok' : BLOCKED.has(page.reason) ? 'blocked' : 'broken')
 
 /** Opens the page an offer cites (and the supplier's site if that page won't load). */
@@ -372,6 +409,7 @@ export async function checkOffer(o, open = fetchPage) {
   return {
     at: new Date().toISOString(),
     page: pageState,
+    ...(page?.viaSearch && { seenBy: 'search' }),
     website,
     priceSeen:
       pageState === 'ok' &&
@@ -387,7 +425,7 @@ export const checkOffers = (list, concurrency = 4, open = fetchPage) =>
 /** Opens the page a posted job (tender, buy requirement) was found on: does it still load? */
 export async function checkJob(j, open = fetchPage) {
   const page = j.url ? await open(String(j.url)) : null
-  return { at: new Date().toISOString(), page: linkState(page) }
+  return { at: new Date().toISOString(), page: linkState(page), ...(page?.viaSearch && { seenBy: 'search' }) }
 }
 
 export const checkJobs = (list, concurrency = 4, open = fetchPage) =>
