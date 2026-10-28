@@ -422,11 +422,37 @@ export const checkOffers = (list, concurrency = 4, open = fetchPage) =>
 
 /* ---------------- posted jobs ---------------- */
 
-/** Opens the page a posted job (tender, buy requirement) was found on: does it still load? */
+// Words in every tender title that say nothing about which job it is.
+const JOB_NOISE = new Set(['supply', 'tender', 'tenders', 'work', 'works', 'with', 'from', 'item', 'items', 'nos', 'numbers', 'per', 'drawing', 'drg', 'spec', 'specification', 'as', 'and', 'the', 'for', 'of'])
+
+/**
+ * Is this job really on the page, not just a list page that loads? Its reference or drawing
+ * number settles it; otherwise most of its distinctive title words must be there.
+ * Null when the page has too little text to judge (an app page that renders in the browser).
+ */
+export function jobOnPage(text, job) {
+  if (!text || text.length < 300) return null
+  const ref = String(job.reference || '').toLowerCase().replace(/\s+/g, ' ').trim()
+  if (ref.length >= 5 && text.includes(ref)) return true
+  const title = String(job.title || '').toLowerCase()
+  // A drawing or part number in the title must be on the page.
+  const numbers = title.match(/\b[a-z]*\d[\d./-]{4,}\b/g) ?? []
+  if (numbers.length) return numbers.some((n) => text.includes(n))
+  const words = [...new Set(title.replace(/[^a-z0-9 ]+/g, ' ').split(' ').filter((w) => w.length >= 4 && !JOB_NOISE.has(w)))]
+  if (!words.length) return null
+  return words.filter((w) => text.includes(w)).length / words.length >= 0.6
+}
+
+/** Opens the page a posted job (tender, buy requirement) was found on: does it load, and is the job on it? */
 export async function checkJob(j, open = fetchPage) {
   const page = j.url ? await open(String(j.url)) : null
-  return { at: new Date().toISOString(), page: linkState(page), ...(page?.viaSearch && { seenBy: 'search' }) }
+  return {
+    at: new Date().toISOString(),
+    page: linkState(page),
+    onPage: page?.ok ? jobOnPage(page.text, j) : null,
+    ...(page?.viaSearch && { seenBy: 'search' }),
+  }
 }
 
 export const checkJobs = (list, concurrency = 4, open = fetchPage) =>
-  pool(list, (j) => checkJob(j, open), concurrency, { at: new Date().toISOString(), page: 'none' })
+  pool(list, (j) => checkJob(j, open), concurrency, { at: new Date().toISOString(), page: 'none', onPage: null })

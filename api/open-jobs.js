@@ -13,8 +13,8 @@ import { checkJobs, fetchedPages, openWithSearchPages } from '../server/verify.j
    The server opens each link; expired or dead ones are dropped.
 
    Searching happens in two rounds the server controls: the shop's own
-   state first, then — only if that found fewer than 3 jobs and there's
-   time left — the rest of India. (Asking the AI to save searches for
+   state first, then — only if fewer than 3 of its jobs pass the checks
+   and there's time left — the rest of India. (Asking the AI to save searches for
    the second round didn't work: it spent them all on the first.)
 ---------------------------------------------------------------- */
 
@@ -27,7 +27,7 @@ Where to look:
 
 Rules:
 - Only report jobs that are still open on "today" (closing date today or later), and only work this shop can do with its machines and kinds of work. Say which of its machines would do it.
-- Every job needs the url of the page you saw it on. Never invent a job, quantity, value, date or buyer. Leave a field empty (or 0 for numbers) when the page doesn't say.
+- Every job needs the url of that job's own page — the tender's detail page or document, or the requirement's own post — not a category list or search page. If you only saw it on a list, open the list entry to find its own page; if you can't find one, skip the job. The app checks the job is really on the page you give. Never invent a job, quantity, value, date or buyer. Leave a field empty (or 0 for numbers) when the page doesn't say.
 - closing_date as YYYY-MM-DD when shown, else empty. estimated_value_inr and emd_inr in rupees, only when the page states them.
 - In "to_apply", say plainly what the owner must do: e.g. "Register as a seller on GeM (needs GSTIN and Udyam)", "EMD of ₹15,000 or Udyam exemption", "Contact shown only to paid IndiaMART sellers — reply through IndiaMART".
 - Skip anything in "known".
@@ -106,29 +106,39 @@ export default handler(async ({ shop, focus = '', known = [], today, scope = 'st
   const rest = state ? `the rest of India, outside ${state}` : 'all of India'
   const pages = new Map()
 
-  const rounds = []
-  if (scope !== 'india') rounds.push(await searchRound({ ...brief, search_area: local }, shop, pages))
-  const openSoFar = rounds.flatMap((r) => r.jobs).filter((j) => !(DAY.test(j.closing_date) && j.closing_date < day))
-  const wanted = scope === 'india' || openSoFar.length < WIDEN_IF_FEWER
-  const time = Date.now() - started < WIDEN_BEFORE_MS
-  if (wanted && (scope === 'india' || time)) {
-    const seen = rounds.flatMap((r) => r.jobs.map((j) => j.url))
-    rounds.push(await searchRound({ ...brief, search_area: rest, known: [...brief.known, ...seen] }, shop, pages))
+  // Each round's links are checked before deciding to widen: a round whose jobs turn out to be
+  // list pages or dead links counts for what's left, not for what the AI reported.
+  const kept = []
+  const summaries = []
+  let nextSteps = []
+  let dropped = 0
+  let rounds = 0
+  const run = async (area, extraKnown = []) => {
+    const r = await searchRound({ ...brief, search_area: area, known: [...brief.known, ...extraKnown] }, shop, pages)
+    const c = await checked(r.jobs, day, pages, new Set(kept.map((x) => x.url)))
+    kept.push(...c.jobs)
+    dropped += c.dropped
+    if (r.summary) summaries.push(r.summary)
+    nextSteps = r.next_steps
+    rounds++
+    return r
   }
 
-  const widened = scope === 'india' || rounds.length > 1
-  const last = rounds.at(-1)
-  const result = await checked(
-    {
-      jobs: rounds.flatMap((r) => r.jobs),
-      summary: rounds.map((r) => r.summary).filter(Boolean).join(' '),
-      next_steps: last.next_steps,
-    },
-    day,
-    pages,
-  )
+  let first = null
+  if (scope !== 'india') first = await run(local)
+  const time = Date.now() - started < WIDEN_BEFORE_MS
+  if (scope === 'india' || (kept.length < WIDEN_IF_FEWER && time)) await run(rest, first ? first.jobs.map((x) => x.url) : [])
+
+  const widened = scope === 'india' || rounds > 1
   // Ran out of time before the all-India round: the app offers it as a button.
-  return { ...result, widened, can_widen: !widened && result.jobs.length < WIDEN_IF_FEWER }
+  return {
+    jobs: kept,
+    summary: summaries.join(' '),
+    next_steps: nextSteps.slice(0, 3),
+    dropped,
+    widened,
+    can_widen: !widened && kept.length < WIDEN_IF_FEWER,
+  }
 })
 
 /** One search for open jobs in the brief's search_area; returns what the AI reported. */
@@ -158,17 +168,14 @@ async function searchRound(brief, shop, pages) {
   throw new HttpError(502, 'The search finished without a list. Try again.')
 }
 
-/** Drops jobs that have already closed or whose page is gone; the rest carry what the check found. */
-async function checked({ jobs = [], summary = '', next_steps = [] }, day, pages) {
-  const unique = [...new Map(jobs.filter((j) => j.title && j.url).map((j) => [j.url, j])).values()]
+/**
+ * Drops jobs that have already closed, whose page is gone, or whose page doesn't show the job
+ * (a list page that loads isn't proof); the rest carry what the check found.
+ */
+async function checked(jobs = [], day, pages, already = new Set()) {
+  const unique = [...new Map(jobs.filter((j) => j.title && j.url && !already.has(j.url)).map((j) => [j.url, j])).values()]
   const open = unique.filter((j) => !(DAY.test(j.closing_date) && j.closing_date < day))
-  const expired = jobs.length - open.length
   const checks = await checkJobs(open, 4, openWithSearchPages(pages))
-  const kept = []
-  let dead = 0
-  open.forEach((j, i) => {
-    if (checks[i].page === 'broken') dead++
-    else kept.push({ ...j, check: checks[i] })
-  })
-  return { jobs: kept, summary, next_steps: next_steps.slice(0, 3), dropped: dead + expired }
+  const kept = open.map((j, i) => ({ ...j, check: checks[i] })).filter((j) => j.check.page !== 'broken' && j.check.onPage !== false)
+  return { jobs: kept, dropped: jobs.length - kept.length }
 }
