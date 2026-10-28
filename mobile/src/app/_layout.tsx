@@ -8,7 +8,7 @@ import { loadChat } from '@/lib/assistant';
 import { loadExpert } from '@/lib/expert';
 import { autoFind } from '@/lib/find';
 import { onNotificationTap } from '@/lib/notify';
-import { loadOpenJobs } from '@/lib/open-jobs';
+import { autoWatchJobs, loadOpenJobs } from '@/lib/open-jobs';
 import { loadPhotos } from '@/lib/photos';
 import { startSync } from '@/lib/sync';
 import { loadPrefs } from '@/lib/prefs';
@@ -32,9 +32,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (!ready) return;
     SplashScreen.hideAsync();
-    // Look for work for free machines now, and each time the app comes back to the front.
+    // Look for work for free machines, and for newly posted jobs every few days: now, and each
+    // time the app comes back to the front.
     autoFind();
-    const sub = AppState.addEventListener('change', (state) => state === 'active' && autoFind());
+    autoWatchJobs();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      autoFind();
+      autoWatchJobs();
+    });
     const untap = onNotificationTap((url) => router.push(url as never));
     return () => {
       sub.remove();

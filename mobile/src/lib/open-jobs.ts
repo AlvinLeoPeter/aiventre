@@ -2,8 +2,10 @@ import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ApiError, post } from './api';
+import { getSession } from './auth';
 import { daysBetween, today } from './model';
-import { bookDeadline, cancelReminder } from './notify';
+import { bookDeadline, cancelReminder, notifyNow } from './notify';
+import { getPrefs, setPrefs } from './prefs';
 import { getData } from './store';
 
 /**
@@ -50,14 +52,20 @@ function set(next: Partial<State>) {
   AsyncStorage.setItem(KEY, JSON.stringify({ jobs, seen, last })).catch(() => {});
 }
 
-export async function loadOpenJobs() {
-  try {
-    const saved = JSON.parse((await AsyncStorage.getItem(KEY)) ?? 'null');
-    if (saved) state = { ...state, jobs: saved.jobs ?? [], seen: saved.seen ?? [], last: saved.last ?? null };
-  } catch {
-    // Start empty.
-  }
-  listeners.forEach((l) => l());
+// Searches wait for the saved list, so an early automatic check can't overwrite it.
+let loaded: Promise<void> = Promise.resolve();
+
+export function loadOpenJobs() {
+  loaded = (async () => {
+    try {
+      const saved = JSON.parse((await AsyncStorage.getItem(KEY)) ?? 'null');
+      if (saved) state = { ...state, jobs: saved.jobs ?? [], seen: saved.seen ?? [], last: saved.last ?? null };
+    } catch {
+      // Start empty.
+    }
+    listeners.forEach((l) => l());
+  })();
+  return loaded;
 }
 
 const subscribe = (l: () => void) => {
@@ -69,11 +77,16 @@ export const useOpenJobs = () => useSyncExternalStore(subscribe, () => state, ()
 /** Days until it closes: 0 = today, negative = closed, null = no date given. */
 export const daysLeft = (j: OpenJob, now = today()) => (/^\d{4}-\d{2}-\d{2}$/.test(j.closing_date) ? daysBetween(now, j.closing_date) : null);
 
-/** `india`: a follow-up search of the rest of India, added to the results already shown. */
-export async function searchOpenJobs(focus = '', scope: 'state' | 'india' = 'state') {
-  if (state.busy) return;
+/**
+ * Searches and shows the results; returns the jobs that are new to this phone, or null if it
+ * couldn't search. `india`: a follow-up search of the rest of India, added to what's shown.
+ * `quiet`: an automatic check, which doesn't put its errors on screen.
+ */
+export async function searchOpenJobs(focus = '', scope: 'state' | 'india' = 'state', quiet = false): Promise<OpenJob[] | null> {
+  await loaded;
+  if (state.busy) return null;
   const d = getData();
-  if (!d.shop) return;
+  if (!d.shop) return null;
   set({ busy: true, error: '' });
   try {
     const known = [...new Set([...state.jobs.map((j) => j.url), ...state.seen])].slice(-150);
@@ -117,9 +130,41 @@ export async function searchOpenJobs(focus = '', scope: 'state' | 'india' = 'sta
       },
       busy: false,
     });
+    return fresh;
   } catch (e) {
-    set({ busy: false, error: e instanceof ApiError ? e.message : 'Something went wrong. Try again.' });
+    set({ busy: false, error: quiet ? '' : e instanceof ApiError ? e.message : 'Something went wrong. Try again.' });
+    return null;
   }
+}
+
+/* ---------------- watching by itself ---------------- */
+
+/** Posted jobs come in waves, so a check every few days catches them without spending much. */
+export const WATCH_DAYS = 3;
+
+/**
+ * Called when the app opens or comes back: if the last check was WATCH_DAYS or more ago, looks
+ * again and notifies only when something new fits well. Quiet otherwise.
+ */
+export async function autoWatchJobs() {
+  await loaded;
+  const prefs = getPrefs();
+  const d = getData();
+  if (!prefs.watchJobs || (!prefs.accessCode && !getSession()) || !d.shop || !d.machines.length || state.busy) return;
+  const now = today();
+  if (prefs.jobsCheckedAt && daysBetween(prefs.jobsCheckedAt, now) < WATCH_DAYS) return;
+  const fresh = await searchOpenJobs('', 'state', true);
+  if (!fresh) return; // offline or failed: try again next time the app opens
+  setPrefs({ jobsCheckedAt: now });
+  const good = fresh.filter((j) => j.fit === 'good' && (daysLeft(j) ?? 0) >= 0);
+  if (!good.length) return;
+  const first = good[0];
+  const left = daysLeft(first);
+  await notifyNow(
+    good.length === 1 ? `New open job: ${first.title.slice(0, 60)}` : `${good.length} new open jobs fit your machines`,
+    good.length === 1 ? `${first.buyer}${left !== null ? ` · closes in ${left} day${left === 1 ? '' : 's'}` : ''}` : good.slice(0, 2).map((j) => j.title.slice(0, 40)).join(' · '),
+    '/open-jobs',
+  );
 }
 
 export async function toggleSaved(id: string) {
