@@ -25,7 +25,13 @@ function Action({ machineId, first }: { machineId: string; first: boolean }) {
       </View>
     );
   }
-  if (fresh > 0) return <Link label={`${fresh} buyer${fresh === 1 ? '' : 's'} →`} onPress={() => router.navigate('/buyers')} />;
+  if (fresh > 0)
+    return (
+      <View style={s.both}>
+        <Link label={`${fresh} buyer${fresh === 1 ? '' : 's'} →`} onPress={() => router.navigate('/buyers')} />
+        <Button label="More" kind="secondary" small onPress={() => findWork(machineId)} />
+      </View>
+    );
   return <Button label={search?.state === 'failed' ? 'Try again' : 'Find work'} kind={first ? 'primary' : 'secondary'} small onPress={() => findWork(machineId)} />;
 }
 
@@ -83,7 +89,13 @@ export function FindWorkButton({ view }: { view: MachineView }) {
   const fresh = (data.leads ?? []).filter((l) => l.machineId === view.machine.id && l.status === 'new').length;
   if (view.status === 'maintenance' || !gap(view)) return null;
   if (search?.state === 'running') return <Button label="Finding work… (1–3 min)" kind="secondary" disabled onPress={() => {}} />;
-  if (fresh) return <Button label={`See ${fresh} buyer${fresh === 1 ? '' : 's'}`} icon="people-outline" kind="secondary" onPress={() => router.navigate('/buyers')} />;
+  if (fresh)
+    return (
+      <View style={{ flexDirection: 'row', gap: S.sm }}>
+        <Button label={`See ${fresh} buyer${fresh === 1 ? '' : 's'}`} icon="people-outline" kind="secondary" flex onPress={() => router.navigate('/buyers')} />
+        <Button label="Find more" icon="search-outline" kind="secondary" flex onPress={() => findWork(view.machine.id)} />
+      </View>
+    );
   return <Button label="Find work for its free days" icon="search-outline" kind="secondary" onPress={() => findWork(view.machine.id)} />;
 }
 
@@ -92,4 +104,5 @@ const useStyles = makeStyles((c) => ({
   strong: { ...type.strong, color: c.text },
   meta: { ...type.meta, color: c.muted },
   searching: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  both: { flexDirection: 'row', alignItems: 'center', gap: S.md },
 }));
