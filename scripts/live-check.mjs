@@ -4,7 +4,7 @@
    for a sample Chennai VMC shop, and checks what comes back:
    every link is opened, closing dates are compared with today.
 
-     AIVENTRE_ACCESS_CODE=… node scripts/live-check.mjs [open-jobs|find-work|source|expert|all]
+     AIVENTRE_ACCESS_CODE=… node scripts/live-check.mjs [open-jobs|find-work|expert|all]
 
    Behind an HTTPS proxy (e.g. a cloud sandbox), add NODE_USE_ENV_PROXY=1
    so Node's fetch uses it.
@@ -99,22 +99,6 @@ const CHECKS = {
       console.log(`  checks: link ${c.link} · website ${c.website} · email ${c.email} · phone ${c.phone} · registration ${c.registration ? `${c.registration.kind}${c.registration.invalid ? ' (invalid)' : ''}` : 'none'} · passed ${c.passed}/3`)
       console.log(`  website from here: ${await opens(b.website && (/^https?:/.test(b.website) ? b.website : `https://${b.website}`))} · source: ${b.source_url}`)
     }
-    return data
-  },
-
-  async source() {
-    const needs = [
-      { kind: 'tool', item: 'Ø10 4-flute solid carbide end mill, TiAlN coated', qty: '5 pcs' },
-      { kind: 'material', item: 'EN8 round bar Ø50 mm', qty: '200 kg' },
-    ]
-    const { data, secs } = await call('/api/source', { shop, needs })
-    console.log(`Suppliers: ${data.offers.length} offers in ${secs}s · dropped ${data.dropped}`)
-    console.log(`Summary: ${data.summary}`)
-    for (const o of data.offers) {
-      console.log(`\n• [${needs[o.need]?.item}] ${o.product}\n  ${o.supplier} · ${o.kind} · ${o.city || 'online'} · ₹${o.price || '?'} ${o.unit} (${o.gst})`)
-      console.log(`  server check: page ${o.check.page} · price seen ${o.check.priceSeen} · from here: ${await opens(o.url)} · ${o.url}`)
-    }
-    console.log(`\nTips: ${data.tips.join(' | ')}`)
     return data
   },
 
