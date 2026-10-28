@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { loadChat } from '@/lib/assistant';
 import { loadExpert } from '@/lib/expert';
 import { autoFind } from '@/lib/find';
+import { loadKept } from '@/lib/keep';
 import { onNotificationTap } from '@/lib/notify';
 import { autoWatchJobs, loadOpenJobs } from '@/lib/open-jobs';
 import { loadPhotos } from '@/lib/photos';
@@ -22,7 +23,11 @@ export default function RootLayout() {
   const { c, scheme } = useTheme();
 
   useEffect(() => {
-    loadPrefs().then(loadData).then(startSync);
+    // Screens' kept results load before the screens open, so they can start from them.
+    loadPrefs()
+      .then(() => loadKept(['quote', 'quote-drawing', 'buy']))
+      .then(loadData)
+      .then(startSync);
     loadChat();
     loadExpert();
     loadPhotos();
