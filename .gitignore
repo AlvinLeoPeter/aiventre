@@ -29,3 +29,6 @@ dist-ssr
 # Expo cache if the app is ever started from the repo root by mistake
 .expo/
 *.apk
+
+# Live check output (scripts/live-check.mjs)
+live-results
