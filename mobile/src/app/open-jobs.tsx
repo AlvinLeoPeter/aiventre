@@ -6,8 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { openUrl } from '@/components/lead-card';
 import { Box, Button, Field, Link, Screen, Section, StatusPill } from '@/components/ui';
 import { useAIReady } from '@/lib/auth';
-import { niceDay } from '@/lib/model';
-import { daysLeft, dismissJob, type OpenJob, quoteNotes, searchOpenJobs, toggleSaved, useOpenJobs } from '@/lib/open-jobs';
+import { usePrefs } from '@/lib/prefs';
+import { addDays, niceDay } from '@/lib/model';
+import { daysLeft, dismissJob, type OpenJob, quoteNotes, searchOpenJobs, toggleSaved, useOpenJobs, WATCH_DAYS } from '@/lib/open-jobs';
 import { inr, setQuoteDraft } from '@/lib/quote';
 import { makeStyles, S, type, useTheme } from '@/lib/theme';
 
@@ -99,6 +100,7 @@ export default function OpenJobsScreen() {
   const { c } = useTheme();
   const s = useStyles();
   const { jobs, last, busy, error } = useOpenJobs();
+  const prefs = usePrefs();
   const aiReady = useAIReady();
   const [focus, setFocus] = useState('');
 
@@ -127,6 +129,11 @@ export default function OpenJobsScreen() {
           </View>
         )}
         {!!error && <Text style={[s.meta, { color: c.idle }]}>{error}</Text>}
+        <Text style={s.meta}>
+          {prefs.watchJobs
+            ? `Aiventre also checks by itself every ${WATCH_DAYS} days${prefs.jobsCheckedAt ? ` (next after ${niceDay(addDays(prefs.jobsCheckedAt, WATCH_DAYS))})` : ''} and notifies you only when something new fits.`
+            : 'Automatic checks are off — turn them on in My shop.'}
+        </Text>
       </Box>
 
       {saved.length > 0 && (

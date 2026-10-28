@@ -12,10 +12,12 @@ export type Prefs = {
   searched: Record<string, string>; // machine id → the free day it was last searched for
   autoDay: string; // the day of the last automatic searches, and how many ran
   autoCount: number;
+  watchJobs: boolean; // re-check open jobs every few days by itself
+  jobsCheckedAt: string; // the day of the last automatic open-jobs check
 };
 
 const KEY = 'aiventre:prefs';
-let prefs: Prefs = { theme: 'system', accessCode: '', autoFind: true, searched: {}, autoDay: '', autoCount: 0 };
+let prefs: Prefs = { theme: 'system', accessCode: '', autoFind: true, searched: {}, autoDay: '', autoCount: 0, watchJobs: true, jobsCheckedAt: '' };
 const listeners = new Set<() => void>();
 
 // Tell the phone too, so keyboards, alerts and pickers match the app.
@@ -55,3 +57,4 @@ export function setTheme(theme: ThemePref) {
 
 export const setAccessCode = (accessCode: string) => setPrefs({ accessCode: accessCode.trim() });
 export const setAutoFind = (autoFind: boolean) => setPrefs({ autoFind });
+export const setWatchJobs = (watchJobs: boolean) => setPrefs({ watchJobs });

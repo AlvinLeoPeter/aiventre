@@ -12,7 +12,7 @@ import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
 import { clearOpenJobs } from '@/lib/open-jobs';
 import { clearPhotos, getPhotos, usePhotos } from '@/lib/photos';
-import { setAccessCode, setAutoFind, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
+import { setAccessCode, setAutoFind, setTheme, setWatchJobs, type ThemePref, usePrefs } from '@/lib/prefs';
 import { pickBackup, shareBackup, shareProfile } from '@/lib/share';
 import { loadDemo, mergeShop, resetAll, updateShop, useData } from '@/lib/store';
 import { useSyncStatus } from '@/lib/sync';
@@ -334,6 +334,19 @@ export default function ShopScreen() {
       <Text style={[s.meta, { marginTop: -S.sm }]}>
         When a machine is free or finishing within 3 days, Aiventre searches for buyers as you open the app (at most 3 searches a day) and
         notifies you.
+      </Text>
+      <Label>Watch for open jobs</Label>
+      <Segmented
+        options={[
+          { value: 'on', label: 'On' },
+          { value: 'off', label: 'Off' },
+        ]}
+        value={prefs.watchJobs ? 'on' : 'off'}
+        onChange={(v) => setWatchJobs(v === 'on')}
+      />
+      <Text style={[s.meta, { marginTop: -S.sm }]}>
+        Every 3 days, as you open the app, Aiventre checks tenders and buy requirements again and notifies you only when something new fits
+        your machines.
       </Text>
 
       <Section title="Backup" />
