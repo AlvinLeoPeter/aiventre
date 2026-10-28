@@ -36,7 +36,7 @@ export type OpenJob = {
   reminderId: string | null;
 };
 
-export type SearchResult = { at: string; summary: string; next_steps: string[]; widened: boolean; dropped: number; found: number };
+export type SearchResult = { at: string; summary: string; next_steps: string[]; widened: boolean; can_widen?: boolean; dropped: number; found: number };
 type State = { jobs: OpenJob[]; seen: string[]; last: SearchResult | null; busy: boolean; error: string };
 
 const KEY = 'aiventre:openjobs';
@@ -69,7 +69,8 @@ export const useOpenJobs = () => useSyncExternalStore(subscribe, () => state, ()
 /** Days until it closes: 0 = today, negative = closed, null = no date given. */
 export const daysLeft = (j: OpenJob, now = today()) => (/^\d{4}-\d{2}-\d{2}$/.test(j.closing_date) ? daysBetween(now, j.closing_date) : null);
 
-export async function searchOpenJobs(focus = '') {
+/** `india`: a follow-up search of the rest of India, added to the results already shown. */
+export async function searchOpenJobs(focus = '', scope: 'state' | 'india' = 'state') {
   if (state.busy) return;
   const d = getData();
   if (!d.shop) return;
@@ -89,6 +90,7 @@ export async function searchOpenJobs(focus = '') {
         machines: d.machines.filter((m) => !m.maintenance).map((m) => ({ name: m.name, type: m.type, details: m.details })),
       },
       focus,
+      scope,
       known,
       today: today(),
     });
@@ -96,12 +98,23 @@ export async function searchOpenJobs(focus = '') {
     const fresh: OpenJob[] = r.jobs
       .filter((j) => !urls.has(j.url))
       .map((j) => ({ ...j, id: Math.random().toString(36).slice(2, 10), foundAt: today(), saved: false, reminderId: null }));
-    // New results replace the last ones the owner didn't save; saved jobs stay until they close.
-    const kept = state.jobs.filter((j) => j.saved && (daysLeft(j) ?? 0) >= 0);
+    // A new search replaces the results the owner didn't save (saved jobs stay until they close);
+    // searching the rest of India adds to what's on screen.
+    const widening = scope === 'india';
+    const kept = state.jobs.filter((j) => (widening || j.saved) && (daysLeft(j) ?? 0) >= 0);
+    const replaced = widening ? [] : state.jobs.filter((j) => !j.saved).map((j) => j.url);
     set({
       jobs: [...fresh, ...kept],
-      seen: [...state.seen, ...state.jobs.filter((j) => !j.saved).map((j) => j.url)].slice(-200),
-      last: { at: new Date().toISOString(), summary: r.summary, next_steps: r.next_steps, widened: r.widened, dropped: r.dropped, found: fresh.length },
+      seen: [...state.seen, ...replaced].slice(-200),
+      last: {
+        at: new Date().toISOString(),
+        summary: r.summary,
+        next_steps: r.next_steps,
+        widened: r.widened,
+        can_widen: r.can_widen,
+        dropped: r.dropped,
+        found: fresh.length + (widening ? (state.last?.found ?? 0) : 0),
+      },
       busy: false,
     });
   } catch (e) {

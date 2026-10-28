@@ -1,5 +1,5 @@
 import { handler, HttpError, runTurn } from '../server/claude.js'
-import { checkOffers } from '../server/verify.js'
+import { checkOffers, fetchedPages, openWithSearchPages } from '../server/verify.js'
 
 /* ----------------------------------------------------------------
    POST /api/source  { shop, needs }  ->  { offers, summary, tips, dropped }
@@ -8,7 +8,9 @@ import { checkOffers } from '../server/verify.js'
    The AI searches Indian suppliers (online tool stores, authorised
    distributors, local dealers, steel traders' price lists), then the
    server opens every page it cites and checks the price is really
-   printed there. The owner always confirms with the supplier.
+   printed there — or, when a site blocks the server, checks it against
+   the copy of the page the AI's own search opened. The owner always
+   confirms with the supplier.
 ---------------------------------------------------------------- */
 
 const SYSTEM = `You help a small Indian manufacturing job shop buy the cutting tools, consumables and raw material for a job, at a fair price, from someone reliable.
@@ -18,6 +20,7 @@ How to work:
 - Prefer offers with a price printed on the page. Report a price only if you saw it on the page you cite, exactly as shown (number only, in rupees) with its unit (per piece, per kg, per metre, per box of 10…) and whether GST is included, extra, or not stated. If the page shows both an MRP and a lower selling price, report the selling price. If the page shows no price, use 0 and the supplier is still useful to ask.
 - Cite the supplier's own product or listing page. A directory or search page listing many sellers (e.g. dir.indiamart.com) is only a lead: open the seller's own listing and cite that, or make sure the price you report sits in that seller's own entry, not a neighbour's.
 - If the page says out of stock, "available on request" or similar, say so in the note.
+- Open each offer's page with web_fetch before you report its price — the app checks the price against the page you opened. With a limited number of fetches, open the most useful offers first.
 - Give up to 3 offers per need: the cheapest credible one, a reliable genuine-brand one, and a local one when you find it. Never invent a supplier, price, phone or email; use only business contact details the supplier publishes. Leave a field empty rather than guess.
 - Watch for fakes and mismatches: a listing for a different size, grade or coating is not a match — say so in the note or skip it. Very low prices for big-brand carbide often mean counterfeit; mention it.
 - Tips (at most 4, short): practical ways to save for this job — e.g. a cheaper insert grade that is fine for this material and quantity, regrinding drills, buying bar in standard lengths, a coating worth paying for. Only things you're confident about.
@@ -87,6 +90,7 @@ export default handler(async ({ shop, needs }) => {
   }
 
   const messages = [{ role: 'user', content: JSON.stringify(brief) }]
+  const pages = new Map() // what the AI's own fetches saw, for sites that block our server
   for (let attempt = 0; attempt < 2; attempt++) {
     const turn = await runTurn({
       max_tokens: 32000,
@@ -95,8 +99,9 @@ export default handler(async ({ shop, needs }) => {
       tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 8 }, REPORT],
       messages,
     })
+    fetchedPages(turn.content, pages)
     const report = turn.content.find((b) => b.type === 'tool_use' && b.name === 'report_offers')
-    if (report) return checked(report.input, list.length)
+    if (report) return checked(report.input, list.length, pages)
     if (turn.stop_reason === 'refusal') throw new HttpError(422, 'The AI declined this search.')
     messages.push({ role: 'assistant', content: turn.content })
     messages.push({ role: 'user', content: 'Now call report_offers with what you found. An empty list is fine.' })
@@ -108,9 +113,9 @@ export default handler(async ({ shop, needs }) => {
  * Opens every cited page before the owner sees it. A dead link with a dead website is dropped;
  * the rest say whether the page loaded and whether the price is printed on it.
  */
-async function checked({ offers = [], summary = '', tips = [] }, needCount) {
+async function checked({ offers = [], summary = '', tips = [] }, needCount, pages) {
   const valid = offers.filter((o) => Number.isInteger(o.need) && o.need >= 0 && o.need < needCount && o.supplier)
-  const checks = await checkOffers(valid)
+  const checks = await checkOffers(valid, 4, openWithSearchPages(pages))
   const kept = []
   let dropped = 0
   valid.forEach((o, i) => {
