@@ -1,4 +1,4 @@
-import { handler, HttpError, runTurn } from '../server/claude.js'
+import { handler, HttpError, mergeCost, newCost, reportCost, runTurn, searchSetup } from '../server/claude.js'
 import { checkJobs, fetchedPages, openWithSearchPages } from '../server/verify.js'
 
 /* ----------------------------------------------------------------
@@ -83,7 +83,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/
 const WIDEN_IF_FEWER = 3
 const WIDEN_BEFORE_MS = 150_000
 
-export default handler(async ({ shop, focus = '', known = [], today, scope = 'state' }) => {
+export default handler(async ({ shop, focus = '', known = [], today, scope = 'state', mode }) => {
   if (!shop?.name) throw new HttpError(400, 'Set up the shop first.')
   const day = DAY.test(today) ? today : new Date().toISOString().slice(0, 10)
   const state = str(shop.state, 60)
@@ -105,6 +105,8 @@ export default handler(async ({ shop, focus = '', known = [], today, scope = 'st
   const local = state ? `${state} and nearby — this shop's own area` : 'the shop\'s own area'
   const rest = state ? `the rest of India, outside ${state}` : 'all of India'
   const pages = new Map()
+  const setup = searchSetup(mode)
+  const cost = newCost()
 
   // Each round's links are checked before deciding to widen: a round whose jobs turn out to be
   // list pages or dead links counts for what's left, not for what the AI reported.
@@ -114,7 +116,7 @@ export default handler(async ({ shop, focus = '', known = [], today, scope = 'st
   let dropped = 0
   let rounds = 0
   const run = async (area, extraKnown = []) => {
-    const r = await searchRound({ ...brief, search_area: area, known: [...brief.known, ...extraKnown] }, shop, pages)
+    const r = await searchRound({ ...brief, search_area: area, known: [...brief.known, ...extraKnown] }, shop, pages, setup, cost)
     const c = await checked(r.jobs, day, pages, new Set(kept.map((x) => x.url)))
     kept.push(...c.jobs)
     dropped += c.dropped
@@ -138,11 +140,12 @@ export default handler(async ({ shop, focus = '', known = [], today, scope = 'st
     dropped,
     widened,
     can_widen: !widened && kept.length < WIDEN_IF_FEWER,
+    cost: reportCost('open-jobs', setup.mode, cost, started),
   }
 })
 
 /** One search for open jobs in the brief's search_area; returns what the AI reported. */
-async function searchRound(brief, shop, pages) {
+async function searchRound(brief, shop, pages, setup, cost) {
   const search = {
     type: 'web_search_20260209',
     name: 'web_search',
@@ -152,12 +155,15 @@ async function searchRound(brief, shop, pages) {
   const messages = [{ role: 'user', content: JSON.stringify(brief) }]
   for (let attempt = 0; attempt < 2; attempt++) {
     const turn = await runTurn({
+      model: setup.model,
+      betas: setup.betas,
       max_tokens: 32000,
-      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }, ...(setup.note ? [{ type: 'text', text: setup.note }] : [])],
       output_config: { effort: 'medium' },
-      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 5 }, REPORT],
+      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 5 }, ...setup.tools, REPORT],
       messages,
     })
+    mergeCost(cost, turn.cost)
     fetchedPages(turn.content, pages)
     const report = turn.content.find((b) => b.type === 'tool_use' && b.name === 'report_jobs')
     if (report) return { jobs: report.input.jobs ?? [], summary: report.input.summary ?? '', next_steps: report.input.next_steps ?? [] }

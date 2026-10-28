@@ -1,4 +1,4 @@
-import { handler, HttpError, runTurn } from '../server/claude.js'
+import { handler, HttpError, mergeCost, newCost, reportCost, runTurn, searchSetup } from '../server/claude.js'
 import { checkBuyers } from '../server/verify.js'
 
 /* ----------------------------------------------------------------
@@ -62,7 +62,7 @@ const REPORT = {
 
 const str = (v, max = 200) => (typeof v === 'string' ? v.slice(0, max) : '')
 
-export default handler(async ({ shop, machine, gap, known = [], avoid = [], bad_sources = [] }) => {
+export default handler(async ({ shop, machine, gap, known = [], avoid = [], bad_sources = [], mode }) => {
   if (!shop?.name || !machine?.type) throw new HttpError(400, 'Set up the shop and pick a machine first.')
 
   const place = [shop.area, shop.city, shop.state].map((x) => str(x, 80)).filter(Boolean).join(', ')
@@ -91,18 +91,27 @@ export default handler(async ({ shop, machine, gap, known = [], avoid = [], bad_
     bad_sources: Array.isArray(bad_sources) ? bad_sources.slice(0, 50).map((k) => str(k, 100)) : [],
   }
 
+  const setup = searchSetup(mode)
+  const started = Date.now()
+  const cost = newCost()
   const messages = [{ role: 'user', content: JSON.stringify(brief) }]
   // Research, then the report. If the model stops without reporting, ask once more.
   for (let attempt = 0; attempt < 2; attempt++) {
     const turn = await runTurn({
+      model: setup.model,
+      betas: setup.betas,
       max_tokens: 32000,
-      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }, ...(setup.note ? [{ type: 'text', text: setup.note }] : [])],
       output_config: { effort: 'medium' },
-      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6 }, REPORT],
+      tools: [search, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6 }, ...setup.tools, REPORT],
       messages,
     })
+    mergeCost(cost, turn.cost)
     const report = turn.content.find((b) => b.type === 'tool_use' && b.name === 'report_buyers')
-    if (report) return checked(report.input.buyers ?? [], report.input.summary ?? '', Number(shop.reach) || 0)
+    if (report) {
+      const result = await checked(report.input.buyers ?? [], report.input.summary ?? '', Number(shop.reach) || 0)
+      return { ...result, cost: reportCost('find-work', setup.mode, cost, started) }
+    }
     if (turn.stop_reason === 'refusal') throw new HttpError(422, 'The AI declined this search.')
     messages.push({ role: 'assistant', content: turn.content })
     messages.push({ role: 'user', content: 'Now call report_buyers with what you found. An empty list is fine if nothing fits.' })

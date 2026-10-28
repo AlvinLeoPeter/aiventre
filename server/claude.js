@@ -31,6 +31,92 @@ const withFallback = (model) => {
 // app, so if a check ever fails we'd rather lose that old reasoning than the request.
 const KEEP_GOING = { betas: ['thinking-binding-controls-2026-08-01'], block_binding: { prefix_mismatch_behavior: 'drop_block' } }
 
+// The searches (Find work, Open jobs) can run two ways: Opus alone, or the cheaper
+// Sonnet doing the searching and asking Opus for advice at the hard moments. SEARCH_MODE
+// picks the default; a request can ask for either so the two can be compared.
+export const SEARCH_MODE = process.env.SEARCH_MODE === 'advisor' ? 'advisor' : 'opus'
+const ADVISOR_NOTE = `You have an advisor: a stronger model you can ask with the advisor tool. Ask it once after your first few searches, to check you're looking in the right places, and once before you report, to check your list. Keep each question short and include what you found.`
+
+/** The model, extra tools and betas for a search, by mode ('opus' or 'advisor'). */
+export function searchSetup(mode = SEARCH_MODE) {
+  if (mode !== 'advisor') return { mode: 'opus', model: MODELS.agent, tools: [], betas: [], note: '' }
+  return {
+    mode,
+    model: process.env.ANTHROPIC_MODEL_EXECUTOR || 'claude-sonnet-5-5',
+    tools: [{ type: 'advisor_20260301', name: 'advisor', model: MODELS.agent, max_tokens: 2048 }],
+    betas: ['advisor-tool-2026-03-01'],
+    note: ADVISOR_NOTE,
+  }
+}
+
+/* ---------------- what a request cost ---------------- */
+
+// US$ per million tokens (input, output). Cache reads are a tenth of input, cache writes
+// 1.25×. Web searches are $10 per 1,000; fetching pages is free.
+const PRICES = [
+  [/^claude-opus/, 4, 20],
+  [/^claude-sonnet/, 2, 10],
+  [/^claude-haiku/, 1, 5],
+]
+const SEARCH_USD = 0.01
+
+function tokenCost(model, u) {
+  const [, input, output] = PRICES.find(([re]) => re.test(model || '')) ?? PRICES[0]
+  return (
+    ((u.input_tokens || 0) * input +
+      (u.cache_creation_input_tokens || 0) * input * 1.25 +
+      (u.cache_read_input_tokens || 0) * input * 0.1 +
+      (u.output_tokens || 0) * output) /
+    1e6
+  )
+}
+
+/**
+ * Adds one response's usage to a running cost. When the response lists its iterations
+ * (the advisor's calls, a fallback model), each is priced by its own model; the top-level
+ * counts alone would miss them.
+ */
+export function addCost(cost, model, usage) {
+  if (!usage) return cost
+  const parts = Array.isArray(usage.iterations) && usage.iterations.length ? usage.iterations : [usage]
+  for (const it of parts) {
+    const m = it.model || model
+    const usd = tokenCost(m, it)
+    cost.byModel[m] = (cost.byModel[m] || 0) + usd
+    cost.usd += usd
+    if (it.type === 'advisor_message') cost.advisorCalls++
+  }
+  const searches = usage.server_tool_use?.web_search_requests || 0
+  cost.searches += searches
+  cost.usd += searches * SEARCH_USD
+  return cost
+}
+
+export const newCost = () => ({ usd: 0, searches: 0, advisorCalls: 0, byModel: {} })
+
+/** Adds one turn's cost (from runTurn) to a request's running total. */
+export function mergeCost(into, from) {
+  into.usd += from.usd
+  into.searches += from.searches
+  into.advisorCalls += from.advisorCalls
+  for (const [m, usd] of Object.entries(from.byModel)) into.byModel[m] = (into.byModel[m] || 0) + usd
+  return into
+}
+
+/** Rounds a cost for the response and the server log. */
+export function reportCost(name, mode, cost, started) {
+  const out = {
+    mode,
+    usd: Math.round(cost.usd * 1000) / 1000,
+    inr: Math.round(cost.usd * 88),
+    searches: cost.searches,
+    advisor_calls: cost.advisorCalls,
+    seconds: Math.round((Date.now() - started) / 1000),
+  }
+  console.log(`[cost] ${name}`, JSON.stringify({ ...out, by_model: Object.fromEntries(Object.entries(cost.byModel).map(([k, v]) => [k, Math.round(v * 1000) / 1000])) }))
+  return out
+}
+
 // Server tools (web search / fetch) can pause a long turn; resume a few times.
 const MAX_CONTINUATIONS = 4
 
@@ -93,24 +179,26 @@ export async function checkAccess(req, keys) {
  * otherwise risk HTTP timeouts) and resumes `pause_turn` server-side, so the
  * caller only ever sees a finished turn: end_turn, tool_use, max_tokens or refusal.
  */
-export async function runTurn({ model = MODELS.agent, ...params }) {
+export async function runTurn({ model = MODELS.agent, betas = [], ...params }) {
   const messages = [...params.messages]
   const request = {
     model,
     ...params,
     ...withFallback(model),
-    betas: [...fallbackBetas(model), ...KEEP_GOING.betas],
+    betas: [...fallbackBetas(model), ...KEEP_GOING.betas, ...betas],
     thinking: { type: 'adaptive', block_binding: KEEP_GOING.block_binding },
   }
   let message
+  const cost = newCost()
   for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
     message = await getClient().beta.messages.stream({ ...request, messages }).finalMessage()
+    addCost(cost, model, message.usage)
     if (message.stop_reason !== 'pause_turn') break
     messages.push({ role: 'assistant', content: message.content })
   }
   // Content from resumed turns is folded into one assistant message for the client.
   const content = messages.slice(params.messages.length).flatMap((m) => m.content).concat(message.content)
-  return { content, stop_reason: message.stop_reason, usage: message.usage }
+  return { content, stop_reason: message.stop_reason, usage: message.usage, cost }
 }
 
 /** One structured call: returns JSON matching `schema`. */
