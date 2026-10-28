@@ -71,6 +71,7 @@ export function FindWorkSection({ views }: { views: MachineView[] }) {
           ? 'Machines free within 3 days are searched by themselves when you open the app — you get a notification when buyers turn up.'
           : 'The AI finds companies near you that buy this kind of work, with a message ready to send.'}
       </Text>
+      <Link label="Or see jobs buyers have posted now →" onPress={() => router.push('/open-jobs')} />
     </>
   );
 }

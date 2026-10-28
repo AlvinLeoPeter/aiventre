@@ -25,6 +25,17 @@ export const MATERIAL_RATES: Record<MaterialType, number> = {
   other: 100,
 };
 
+/* Another screen (an open job) can start a quote with its details as the notes. */
+let quoteDraft: string | null = null;
+export const setQuoteDraft = (notes: string) => {
+  quoteDraft = notes;
+};
+export const takeQuoteDraft = () => {
+  const n = quoteDraft;
+  quoteDraft = null;
+  return n;
+};
+
 export const inr = (n: number) => `₹${(Math.round(n * 100) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 export const isOutsourced = (op: PlanItem['operations'][number]) => /outsourc/i.test(op.machine) || op.outsourced_cost_per_part > 0;

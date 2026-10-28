@@ -1,6 +1,6 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Box, Button, Field, Label, Link, Rule, Screen, Section, Segmented, StatusPill, tap } from '@/components/ui';
@@ -10,7 +10,7 @@ import type { Status } from '@/lib/model';
 import { useAIReady } from '@/lib/auth';
 import { setAccessCode } from '@/lib/prefs';
 import { DEFAULT_SAC, setInvoiceDraft } from '@/lib/invoice';
-import { DEFAULT_RATE, type Edits, GST, inr, isOutsourced, MATERIAL_RATES, priceItem, type Rates, rateFor, shareQuotation } from '@/lib/quote';
+import { DEFAULT_RATE, type Edits, GST, inr, isOutsourced, MATERIAL_RATES, priceItem, type Rates, rateFor, shareQuotation, takeQuoteDraft } from '@/lib/quote';
 import { needsFromPlan, setPendingNeeds } from '@/lib/source';
 import { updateShop, useData } from '@/lib/store';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
@@ -252,6 +252,18 @@ export default function QuoteScreen() {
     Object.fromEntries(Object.entries({ ...MATERIAL_RATES, ...shop.materialRates }).map(([k, v]) => [k, String(v)])),
   );
   const [gst, setGst] = useState<'yes' | 'no'>('yes');
+
+  // Opened from an open job: start a fresh quote with its details.
+  useFocusEffect(
+    useCallback(() => {
+      const draft = takeQuoteDraft();
+      if (!draft) return;
+      setPlan(null);
+      setDrawing(null);
+      setError('');
+      setNotes(draft);
+    }, []),
+  );
   const [customer, setCustomer] = useState('');
   const [shareError, setShareError] = useState('');
 
