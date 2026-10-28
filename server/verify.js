@@ -157,11 +157,14 @@ function emailIn(text, siteDomain) {
 }
 
 /** The first Indian phone number printed on their pages: a mobile, or a landline with its STD code. */
-function phoneIn(text) {
-  const candidates = text.match(/(?:\+?91[\s-]?)?(?:[6-9]\d{4}[\s-]?\d{5}|0\d{2,4}[\s-]?\d{2,4}[\s-]?\d{3,4})/g) ?? []
-  // A mobile is 10 digits; a landline is 0 + STD code + number, 11 digits in all.
+export function phoneIn(text) {
+  // Whole numbers only: a run of digits is never cut in two ("+914426252537" is one number).
+  const candidates = text.match(/(?<![\d+])(?:\+?91[\s-]?)?\d[\d\s-]{8,13}\d(?!\d)/g) ?? []
+  // A mobile is 10 digits; a landline is 0 + STD code + number, 11 digits in all,
+  // or the same without the 0 after +91 ("+91-44-2625 2537").
   const ok = candidates.find((c) => {
-    const d = c.replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '')
+    const d = c.replace(/\D/g, '')
+    if (/^91\d{10}$/.test(d)) return /^[1-9]/.test(d.slice(2))
     return /^[6-9]\d{9}$/.test(d) || /^0\d{10}$/.test(d)
   })
   return ok ? ok.trim() : ''
@@ -330,6 +333,33 @@ export function priceOnPage(text, price) {
   return before.test(text) || after.test(text)
 }
 
+// Pages listing many sellers' prices side by side: a price there only counts in that seller's own entry.
+const MANY_SELLERS = /(^|\.)(indiamart|tradeindia|exportersindia|justdial)\.com$/
+
+/**
+ * On a marketplace listing many sellers, the price must sit in this supplier's entry: each entry
+ * shows its price and then the seller's name, so the name must come before the next price.
+ */
+export function priceForSupplier(text, price, supplier) {
+  if (!priceOnPage(text, price)) return false
+  const name = String(supplier || '').replace(/\(.*?\)/g, ' ').trim()
+  if (!name) return false
+  const rupee = /₹|(?<![a-z])rs\.?\s*\d/g
+  let at = 0
+  while (at < text.length) {
+    rupee.lastIndex = at
+    const start = rupee.exec(text)
+    if (!start) return false
+    rupee.lastIndex = start.index + 1
+    const next = rupee.exec(text)
+    const entry = text.slice(start.index, next ? next.index : text.length)
+    if (priceOnPage(entry, price) && mentions(entry, name)) return true
+    if (!next) return false
+    at = next.index
+  }
+  return false
+}
+
 const linkState = (page) => (!page ? 'none' : page.ok ? 'ok' : BLOCKED.has(page.reason) ? 'blocked' : 'broken')
 
 /** Opens the page an offer cites (and the supplier's site if that page won't load). */
@@ -343,7 +373,9 @@ export async function checkOffer(o, open = fetchPage) {
     at: new Date().toISOString(),
     page: pageState,
     website,
-    priceSeen: pageState === 'ok' && priceOnPage(page.text, Number(o.price)),
+    priceSeen:
+      pageState === 'ok' &&
+      (MANY_SELLERS.test(domainOf(page.url)) ? priceForSupplier(page.text, Number(o.price), o.supplier) : priceOnPage(page.text, Number(o.price))),
   }
 }
 

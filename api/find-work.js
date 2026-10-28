@@ -22,7 +22,7 @@ How to work:
 - Only report companies within delivery_distance_km of the shop (when it's a number). Closer is better.
 - Always give the company's own website: the app opens its contact page itself and fills in a phone or email you couldn't reach, so spend your budget on finding the right companies rather than on contact pages.
 - For each buyer write a short first message the owner can send on WhatsApp or email (under 70 words, plain Indian business English, no hype): who they are, the matching capability and machine, that it has capacity from the free date, and one clear ask (send a drawing and quantity for a quote). Sign with the owner's name and shop. No invented facts or certifications.
-- When done, call report_buyers exactly once. If you found little, report what you have and say why in the summary.`
+- When done, call report_buyers exactly once. If you found little, report what you have and say why in the summary. The app checks every buyer and may drop some, so in the summary don't count the buyers or name ones you aren't reporting.`
 
 const BUYER = {
   type: 'object',
