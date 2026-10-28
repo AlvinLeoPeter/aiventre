@@ -208,10 +208,7 @@ export default function ShopScreen() {
       <Button label="Send my company profile (PDF)" icon="document-text-outline" onPress={() => shareProfile(data, getPhotos()).catch((e) => setFileError((e as Error).message))} />
       <Text style={[s.meta, { marginTop: -S.sm }]}>Your shop, machines, photos, registration and on-time record — to send buyers on WhatsApp or email.</Text>
       {!!fileError && <Text style={[s.meta, { color: c.idle }]}>{fileError}</Text>}
-      <View style={s.row}>
-        <Button label="Bills" icon="receipt-outline" kind="secondary" small flex onPress={() => router.push('/bills')} />
-        <Button label="Buy tools & material" icon="cart-outline" kind="secondary" small flex onPress={() => router.push('/buy')} />
-      </View>
+      <Button label="Bills" icon="receipt-outline" kind="secondary" small onPress={() => router.push('/bills')} />
 
       <Section title="Profile" right={!describing && <Link label="Describe it to AI" onPress={() => setDescribing(true)} />} />
       {describing && <Describe />}

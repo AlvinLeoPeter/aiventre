@@ -12,7 +12,6 @@ import { setAccessCode } from '@/lib/prefs';
 import { DEFAULT_SAC, setInvoiceDraft } from '@/lib/invoice';
 import { getKept, keep } from '@/lib/keep';
 import { DEFAULT_RATE, type Edits, GST, inr, isOutsourced, MATERIAL_RATES, priceItem, type Rates, rateFor, shareQuotation, takeQuoteDraft } from '@/lib/quote';
-import { needsFromPlan, setPendingNeeds } from '@/lib/source';
 import { updateShop, useData } from '@/lib/store';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
 
@@ -442,17 +441,6 @@ export default function QuoteScreen() {
           {!!shareError && <Text style={[s.meta, { color: c.idle }]}>{shareError}</Text>}
           <Text style={s.meta}>AI plans and times can be wrong. Check them against your own experience before you send a price.</Text>
           <View style={s.row}>
-            <Button
-              label="Where to buy"
-              icon="cart-outline"
-              kind="secondary"
-              small
-              flex
-              onPress={() => {
-                setPendingNeeds(needsFromPlan(lines));
-                router.push('/buy');
-              }}
-            />
             <Button
               label="Order won: bill it"
               icon="receipt-outline"

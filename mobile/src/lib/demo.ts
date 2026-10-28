@@ -84,19 +84,6 @@ export function demoData(): Data {
   return {
     version: 1,
     invoices,
-    suppliers: [
-      {
-        id: 's1',
-        name: 'Sample Tools & Traders, Bhosari',
-        city: 'Pune',
-        phone: '',
-        email: '',
-        website: '',
-        sells: ['Carbide end mills', 'Turning inserts'],
-        notes: '',
-        savedAt: `${t}T09:00:00.000Z`,
-      },
-    ],
     shop: {
       name: 'Sharma Precision',
       gstin: '27AAAAA0000A1Z2',

@@ -25,7 +25,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Screens' kept results load before the screens open, so they can start from them.
     loadPrefs()
-      .then(() => loadKept(['quote', 'quote-drawing', 'buy']))
+      .then(() => loadKept(['quote', 'quote-drawing']))
       .then(loadData)
       .then(startSync);
     loadChat();
@@ -86,7 +86,6 @@ export default function RootLayout() {
         <Stack.Screen name="bills" options={{ title: 'Bills' }} />
         <Stack.Screen name="invoice/[id]" options={{ title: '' }} />
         <Stack.Screen name="invoice/edit" options={{ title: 'Invoice' }} />
-        <Stack.Screen name="buy" options={{ title: 'Buy' }} />
       </Stack>
     </ThemeProvider>
   );
