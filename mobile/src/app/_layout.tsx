@@ -8,6 +8,7 @@ import { loadChat } from '@/lib/assistant';
 import { loadExpert } from '@/lib/expert';
 import { autoFind } from '@/lib/find';
 import { onNotificationTap } from '@/lib/notify';
+import { loadPhotos } from '@/lib/photos';
 import { startSync } from '@/lib/sync';
 import { loadPrefs } from '@/lib/prefs';
 import { loadData, useReady } from '@/lib/store';
@@ -23,6 +24,7 @@ export default function RootLayout() {
     loadPrefs().then(loadData).then(startSync);
     loadChat();
     loadExpert();
+    loadPhotos();
   }, []);
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function RootLayout() {
         <Stack.Screen name="reply" options={{ presentation: 'modal', title: 'Sort a reply' }} />
         <Stack.Screen name="assistant" options={{ headerShown: false }} />
         <Stack.Screen name="expert" options={{ headerShown: false }} />
+        <Stack.Screen name="trust" options={{ title: 'Trust pack' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
         <Stack.Screen name="bills" options={{ title: 'Bills' }} />
         <Stack.Screen name="invoice/[id]" options={{ title: '' }} />

@@ -25,6 +25,7 @@ export type Job = {
   status: 'queued' | 'running' | 'done';
   start: string | null; // YYYY-MM-DD, set when it starts
   due: string | null; // YYYY-MM-DD, expected finish
+  firstDue?: string | null; // the finish day planned when it started; "+1 day" moves due, not this
   doneAt: string | null;
   notificationId: string | null;
 };
@@ -52,7 +53,10 @@ export type Shop = {
   certifications?: string[];
   gstin?: string; // the shop's own, printed on quotations and invoices
   materialRates?: Record<string, number>; // ₹ per kg the owner pays, by material
-  address?: string; // street address, printed on invoices
+  address?: string; // street address, printed on invoices and the profile
+  udyam?: string; // MSME registration, e.g. UDYAM-TN-02-0012345
+  inspection?: string[]; // measuring instruments, e.g. Micrometer 0–25 mm
+  customers?: string[]; // companies served, only with their permission
   bank?: { name: string; account: string; ifsc: string; upi: string }; // where buyers pay
 };
 
@@ -294,6 +298,17 @@ export function slots(v: MachineView, now = today(), days = BOARD_DAYS): Slot[] 
 export function bookedShare(views: MachineView[], now = today()) {
   const all = views.flatMap((v) => slots(v, now)).filter((s) => s !== 'off');
   return all.length ? all.filter((s) => s !== 'free').length / all.length : 0;
+}
+
+/**
+ * How often jobs finished by the day planned when they started, over the last year. Only jobs
+ * tracked since that day was recorded count, and it isn't shown until there are enough of them.
+ */
+export const RECORD_MIN_JOBS = 5;
+export function deliveryRecord(jobs: Job[], now = today()) {
+  const counted = jobs.filter((j) => j.status === 'done' && j.doneAt && j.firstDue && daysBetween(j.doneAt, now) <= 365);
+  const onTime = counted.filter((j) => j.doneAt! <= j.firstDue!).length;
+  return { jobs: counted.length, onTime, share: counted.length ? onTime / counted.length : 0, enough: counted.length >= RECORD_MIN_JOBS };
 }
 
 /** Machine-days nobody has booked yet in the next two weeks — what the AI will try to fill. */

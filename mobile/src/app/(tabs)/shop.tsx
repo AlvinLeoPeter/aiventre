@@ -4,16 +4,18 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ShopPlace } from '@/components/place';
-import { Box, Button, Chip, Field, Label, Link, Rule, Screen, Section, Segmented } from '@/components/ui';
+import { Box, Button, Chip, Field, Label, Link, ListField, Rule, Screen, Section, Segmented } from '@/components/ui';
 import { runTask, type SetupResult } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { confirm } from '@/lib/confirm';
 import { machineTypesFor, WORK_TYPES } from '@/lib/demo';
 import type { Shop } from '@/lib/model';
+import { clearPhotos, getPhotos, usePhotos } from '@/lib/photos';
 import { setAccessCode, setAutoFind, setTheme, type ThemePref, usePrefs } from '@/lib/prefs';
 import { pickBackup, shareBackup, shareProfile } from '@/lib/share';
 import { loadDemo, mergeShop, resetAll, updateShop, useData } from '@/lib/store';
 import { useSyncStatus } from '@/lib/sync';
+import { trustSteps } from '@/lib/trust';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const COMING = [
@@ -35,8 +37,6 @@ const LISTS = [
 ] as const;
 
 const BLANK_BANK = { name: '', account: '', ifsc: '', upi: '' };
-
-const toList = (text: string) => text.split(',').map((x) => x.trim()).filter(Boolean);
 
 /** Signed in or not, and whether the shop is safely online. */
 function AccountBox() {
@@ -76,10 +76,28 @@ function AccountBox() {
   );
 }
 
-/** A comma-separated list, kept as typed until you leave the field. */
-function ListField({ label, placeholder, value, onChange }: { label: string; placeholder: string; value?: string[]; onChange: (v: string[]) => void }) {
-  const [text, setText] = useState((value ?? []).join(', '));
-  return <Field label={label} placeholder={placeholder} value={text} onChangeText={setText} onBlur={() => onChange(toList(text))} />;
+/** How ready the shop is for a buyer who has never heard of it. */
+function TrustCard() {
+  const { c } = useTheme();
+  const s = useStyles();
+  const data = useData();
+  const photos = usePhotos();
+  const steps = trustSteps(data, photos.length);
+  const done = steps.filter((x) => x.done).length;
+  return (
+    <Pressable onPress={() => router.push('/trust')} accessibilityRole="button">
+      <Box style={s.between}>
+        <Ionicons name="shield-checkmark-outline" size={24} color={done === steps.length ? c.running : c.muted} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.strong}>
+            Trust pack · {done} of {steps.length} done
+          </Text>
+          <Text style={s.meta}>What buyers check before giving work to a new shop</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={c.muted} />
+      </Box>
+    </Pressable>
+  );
 }
 
 /** "Tell us more": the owner describes the shop and the AI adds what it hears to the profile. */
@@ -184,8 +202,9 @@ export default function ShopScreen() {
   return (
     <Screen title="My shop">
       <AccountBox />
-      <Button label="Send my capability profile (PDF)" icon="document-text-outline" onPress={() => shareProfile(data).catch((e) => setFileError((e as Error).message))} />
-      <Text style={[s.meta, { marginTop: -S.sm }]}>One page about your shop, machines and what you make — to send buyers on WhatsApp or email.</Text>
+      <TrustCard />
+      <Button label="Send my company profile (PDF)" icon="document-text-outline" onPress={() => shareProfile(data, getPhotos()).catch((e) => setFileError((e as Error).message))} />
+      <Text style={[s.meta, { marginTop: -S.sm }]}>Your shop, machines, photos, registration and on-time record — to send buyers on WhatsApp or email.</Text>
       {!!fileError && <Text style={[s.meta, { color: c.idle }]}>{fileError}</Text>}
       <View style={s.row}>
         <Button label="Bills" icon="receipt-outline" kind="secondary" small flex onPress={() => router.push('/bills')} />
@@ -355,6 +374,7 @@ export default function ShopScreen() {
           kind="secondary"
           onPress={() =>
             confirm('Load the sample shop?', 'This replaces your machines, jobs and buyers with a demo shop.', 'Load', () => {
+              clearPhotos();
               loadDemo();
               router.replace('/');
             })
@@ -365,6 +385,7 @@ export default function ShopScreen() {
           kind="danger"
           onPress={() =>
             confirm('Reset everything?', 'All machines, jobs, buyers and shop details on this phone will be deleted.', 'Reset', () => {
+              clearPhotos();
               resetAll();
               router.replace('/onboarding');
             })

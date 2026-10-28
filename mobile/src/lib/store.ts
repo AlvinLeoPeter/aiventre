@@ -136,6 +136,7 @@ export function addJob(input: NewJob) {
     status: busy ? 'queued' : 'running',
     start: busy ? null : now,
     due: busy ? null : addDays(now, input.days),
+    firstDue: busy ? null : addDays(now, input.days),
     doneAt: null,
     notificationId: null,
   };
@@ -148,7 +149,8 @@ export function updateJob(id: string, patch: Partial<Pick<Job, 'title' | 'custom
   const job = data.jobs.find((j) => j.id === id);
   if (!job) return;
   const due = job.status === 'running' && patch.days && job.start ? addDays(job.start, patch.days) : job.due;
-  patchJob(id, { ...patch, due });
+  // Changing how long it takes is a new plan, so the planned day moves too; "+1 day" doesn't.
+  patchJob(id, { ...patch, due, ...(due !== job.due && { firstDue: due }) });
   if (due !== job.due) rebook(id);
 }
 
@@ -163,7 +165,7 @@ export function finishJob(id: string) {
     ...data,
     jobs: data.jobs.map((j) => {
       if (j.id === id) return { ...j, status: 'done', doneAt: now, notificationId: null };
-      if (next && j.id === next.id) return { ...j, status: 'running', start: now, due: addDays(now, j.days) };
+      if (next && j.id === next.id) return { ...j, status: 'running', start: now, due: addDays(now, j.days), firstDue: addDays(now, j.days) };
       return j;
     }),
   });
@@ -185,7 +187,7 @@ export function startJob(id: string) {
   const job = data.jobs.find((j) => j.id === id);
   if (!job || data.jobs.some((j) => j.machineId === job.machineId && j.status === 'running')) return;
   const now = today();
-  patchJob(id, { status: 'running', start: now, due: addDays(now, job.days) });
+  patchJob(id, { status: 'running', start: now, due: addDays(now, job.days), firstDue: addDays(now, job.days) });
   rebook(id);
 }
 
