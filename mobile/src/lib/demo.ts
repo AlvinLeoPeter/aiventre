@@ -100,6 +100,11 @@ export function demoData(): Data {
     shop: {
       name: 'Sharma Precision',
       gstin: '27AAAAA0000A1Z2',
+      udyam: 'UDYAM-MH-26-0000001',
+      inspection: ['Vernier caliper', 'Micrometer', 'Height gauge', 'Bore gauge', 'Thread gauges'],
+      customers: ['Mahindra vendor, Chakan', 'Valve maker, Bhosari'],
+      summary: 'CNC turning and VMC machining of tractor, pump and valve parts in EN8, cast iron and aluminium. Batches of 50 to 2,000.',
+      phone: '98220 00000',
       address: 'Plot 14, Chakan Industrial Area',
       bank: { name: 'Sample Bank', account: '000012345678', ifsc: 'SMPL0001234', upi: 'sharmaprecision@upi' },
       owner: 'Rajesh',
@@ -123,6 +128,29 @@ export function demoData(): Data {
       job({ id: 'j3', machineId: 'm2', title: 'Flange', customer: 'Valve maker, Bhosari', qty: 200, days: 4, status: 'running', start: d(-5), due: d(-1) }),
       job({ id: 'j4', machineId: 'm3', title: 'Drive shaft', customer: 'Tractor parts, Nashik', qty: 300, days: 6, status: 'running', start: d(-5), due: d(1) }),
       job({ id: 'j5', machineId: 'm4', title: 'Bush', customer: 'Local trader', qty: 1000, days: 3, status: 'done', start: d(-6), due: d(-3), doneAt: d(-3) }),
+      // Older finished jobs, for the on-time record: one ran a day late.
+      ...[
+        ['j6', 'm1', 'Gearbox bracket', 'Mahindra vendor, Chakan', 400, -40, 7, 0],
+        ['j7', 'm2', 'Flange', 'Valve maker, Bhosari', 300, -45, 4, 0],
+        ['j8', 'm3', 'Drive shaft', 'Tractor parts, Nashik', 250, -50, 6, 1],
+        ['j9', 'm1', 'Pump housing', 'Kirloskar supplier', 120, -60, 5, 0],
+        ['j10', 'm4', 'Bush', 'Local trader', 800, -70, 3, 0],
+        ['j11', 'm2', 'Valve body', 'Valve maker, Bhosari', 150, -80, 6, 0],
+      ].map(([id, machineId, title, customer, qty, end, days, late]) =>
+        job({
+          id: id as string,
+          machineId: machineId as string,
+          title: title as string,
+          customer: customer as string,
+          qty: qty as number,
+          days: days as number,
+          status: 'done',
+          start: d((end as number) - (days as number)),
+          due: d((end as number) + (late as number)),
+          firstDue: d(end as number),
+          doneAt: d((end as number) + (late as number)),
+        }),
+      ),
     ],
   };
 }

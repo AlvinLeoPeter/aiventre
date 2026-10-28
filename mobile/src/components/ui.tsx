@@ -283,6 +283,41 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
   );
 }
 
+/**
+ * A list typed as text, kept as typed until you leave the field: comma-separated, or one per
+ * line (`lines`) when the items themselves can contain commas, like "Valve maker, Bhosari".
+ */
+export function ListField({
+  label,
+  placeholder,
+  hint,
+  value,
+  onChange,
+  lines,
+}: {
+  label: string;
+  placeholder: string;
+  hint?: string;
+  value?: string[];
+  onChange: (v: string[]) => void;
+  lines?: boolean;
+}) {
+  const [text, setText] = useState((value ?? []).join(lines ? '\n' : ', '));
+  const toList = (t: string) => t.split(lines ? '\n' : ',').map((x) => x.trim()).filter(Boolean);
+  return (
+    <Field
+      label={label}
+      placeholder={placeholder}
+      hint={hint}
+      value={text}
+      onChangeText={setText}
+      onBlur={() => onChange(toList(text))}
+      multiline={lines}
+      style={lines ? { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' } : undefined}
+    />
+  );
+}
+
 const useStyles = makeStyles((c) => ({
   screen: { flex: 1, backgroundColor: c.ground },
   title: { ...type.title, color: c.text },
