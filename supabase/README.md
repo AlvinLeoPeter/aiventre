@@ -16,6 +16,8 @@ through the API (the app marks rows `deleted` so deletions reach every phone).
 **Updates:** each later file in `migrations/` is run once, in order, the same way.
 [`0002_invoices_suppliers.sql`](migrations/0002_invoices_suppliers.sql) adds `invoices` and `suppliers` (billing and
 saved suppliers). Until it's run, signed-in phones show "The online database needs an update".
+[`0003_pilot_requests.sql`](migrations/0003_pilot_requests.sql) stores the website's "Join the pilot" form.
+Anyone can send one; nobody can read them through the API. See them in **Table Editor → pilot_requests**.
 
 ## 2. Make the sign-in email send a code
 
