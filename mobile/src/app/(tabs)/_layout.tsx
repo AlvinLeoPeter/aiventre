@@ -12,16 +12,20 @@ export default function TabLayout() {
   return (
     <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{
         headerShown: false,
-        // A quick cross-fade between tabs: cheap enough to stay smooth on any phone.
+        // Like YouTube: the new tab is there almost at once (a 90 ms fade; with no animation at
+        // all the old tab can stay on top on the web). The four everyday tabs load up front so
+        // even the first switch is instant, and hidden tabs don't redraw while you're away.
         animation: 'fade',
-        transitionSpec: { animation: 'timing', config: { duration: 180, easing: Easing.out(Easing.cubic) } },
+        transitionSpec: { animation: 'timing', config: { duration: 90, easing: Easing.out(Easing.quad) } },
+        lazy: false,
+        freezeOnBlur: true,
       }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />
       <Tabs.Screen name="machines" options={{ title: 'Machines' }} />
       <Tabs.Screen name="buyers" options={{ title: 'Buyers' }} />
       <Tabs.Screen name="money" options={{ title: 'Money' }} />
-      <Tabs.Screen name="quote" options={{ title: 'Quote' }} />
-      <Tabs.Screen name="shop" options={{ title: 'My shop' }} />
+      <Tabs.Screen name="quote" options={{ title: 'Quote', lazy: true }} />
+      <Tabs.Screen name="shop" options={{ title: 'My shop', lazy: true }} />
     </Tabs>
   );
 }
