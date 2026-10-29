@@ -5,8 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 /** Settings that belong to this phone, not to the shop: look, AI access code, automatic searching. */
 
 export type ThemePref = 'system' | 'light' | 'dark';
+export type GlowPref = 'on' | 'still' | 'off'; // the colour glow behind screens: moving, still, or none
 export type Prefs = {
   theme: ThemePref;
+  glow: GlowPref;
   accessCode: string;
   autoFind: boolean;
   searched: Record<string, string>; // machine id → the free day it was last searched for
@@ -17,7 +19,7 @@ export type Prefs = {
 };
 
 const KEY = 'aiventre:prefs';
-let prefs: Prefs = { theme: 'system', accessCode: '', autoFind: true, searched: {}, autoDay: '', autoCount: 0, watchJobs: true, jobsCheckedAt: '' };
+let prefs: Prefs = { theme: 'system', glow: 'on', accessCode: '', autoFind: true, searched: {}, autoDay: '', autoCount: 0, watchJobs: true, jobsCheckedAt: '' };
 const listeners = new Set<() => void>();
 
 // Tell the phone too, so keyboards, alerts and pickers match the app.
@@ -55,6 +57,7 @@ export function setTheme(theme: ThemePref) {
   applyTheme(theme);
 }
 
+export const setGlow = (glow: GlowPref) => setPrefs({ glow });
 export const setAccessCode = (accessCode: string) => setPrefs({ accessCode: accessCode.trim() });
 export const setAutoFind = (autoFind: boolean) => setPrefs({ autoFind });
 export const setWatchJobs = (watchJobs: boolean) => setPrefs({ watchJobs });

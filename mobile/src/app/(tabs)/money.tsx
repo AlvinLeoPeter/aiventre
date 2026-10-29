@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 
 import { Box, Button, Press, Rule, Screen, Section, Segmented, StatusPill } from '@/components/ui';
 import { balance, dmy, invoiceState, invoiceTotals, lastMonth, shareMonthCsv, thisMonth, unbilledJobs } from '@/lib/invoice';
@@ -13,8 +13,8 @@ type Filter = 'open' | 'paid' | 'all';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthName = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
 
-/** Every invoice, who still owes what, and the monthly list for the accountant. */
-export default function BillsScreen() {
+/** Money: every invoice, who still owes what, and the monthly list for the accountant. */
+export default function MoneyScreen() {
   const { c } = useTheme();
   const s = useStyles();
   const data = useData();
@@ -43,14 +43,10 @@ export default function BillsScreen() {
   };
 
   return (
-    <Screen padTop={false}>
-      <Stack.Screen options={{ title: 'Bills' }} />
-
-      <Box>
-        <View style={s.between}>
-          <Text style={s.body}>To collect</Text>
-          <Text style={s.price}>{inr(toCollect)}</Text>
-        </View>
+    <Screen title="Money">
+      <Box style={{ gap: S.sm }}>
+        <Text style={s.meta}>To collect</Text>
+        <Text style={s.price}>{inr(toCollect)}</Text>
         {overdue.length > 0 && (
           <View style={s.between}>
             <Text style={[s.strong, { color: c.idle }]}>Overdue · {overdue.length}</Text>
@@ -147,7 +143,7 @@ const useStyles = makeStyles((c) => ({
   strong: { ...type.strong, color: c.text },
   body: { ...type.body, color: c.text },
   meta: { ...type.meta, color: c.muted },
-  price: { ...type.value, fontSize: 24, color: c.text },
+  price: { ...type.value, fontSize: 38, letterSpacing: -1.2, color: c.text },
   amount: { ...type.strong, fontSize: 16, color: c.text, ...type.num },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingHorizontal: S.lg, paddingVertical: 12 },

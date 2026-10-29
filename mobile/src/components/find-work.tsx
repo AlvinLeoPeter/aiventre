@@ -1,13 +1,14 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { findWork, useSearches } from '@/lib/find';
 import { usePrefs } from '@/lib/prefs';
 import { gap, type MachineView, relativeDay, today } from '@/lib/model';
 import { useData } from '@/lib/store';
-import { makeStyles, S, type, useTheme } from '@/lib/theme';
+import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
-import { Box, Button, Link, Rule, Section } from './ui';
+import { Box, Button, Link, Press, Rule, Section } from './ui';
 
 /** What to show next to a machine: search it, it's searching, or see what was found. */
 function Action({ machineId, first }: { machineId: string; first: boolean }) {
@@ -35,24 +36,71 @@ function Action({ machineId, first }: { machineId: string; first: boolean }) {
   return <Button label={search?.state === 'failed' ? 'Try again' : 'Find work'} kind={first ? 'primary' : 'secondary'} small onPress={() => findWork(machineId)} />;
 }
 
+type Open = { v: MachineView; free: NonNullable<ReturnType<typeof gap>> };
+
+/** Machines with unbooked days in the next two weeks, soonest free first. */
+const openMachines = (views: MachineView[], now: string): Open[] =>
+  views
+    .filter((v) => v.status !== 'maintenance')
+    .map((v) => ({ v, free: gap(v, now) }))
+    .filter((x): x is Open => x.free !== null)
+    .sort((a, b) => a.free.from.localeCompare(b.free.from));
+
+/** The top of Today: the machine that's free soonest, on a bright card, one tap from finding it work. */
+export function FreeHighlight({ views }: { views: MachineView[] }) {
+  const { c } = useTheme();
+  const s = useStyles();
+  const data = useData();
+  const searches = useSearches();
+  const now = today();
+  const first = openMachines(views, now)[0];
+  if (!first) return null;
+  const { v, free } = first;
+  const search = searches[v.machine.id];
+  const fresh = (data.leads ?? []).filter((l) => l.machineId === v.machine.id && l.status === 'new').length;
+
+  return (
+    <LinearGradient colors={[c.accent, c.accent2]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.hero}>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text style={s.heroTitle}>
+          {v.machine.name} is free {free.from <= now ? 'now' : relativeDay(free.from)}
+        </Text>
+        <Text style={s.heroSub}>
+          {free.days} free day{free.days === 1 ? '' : 's'} · {fresh ? `${fresh} buyer${fresh === 1 ? '' : 's'} found` : 'find companies that need this work'}
+        </Text>
+      </View>
+      {search?.state === 'running' ? (
+        <View style={s.heroBusy}>
+          <ActivityIndicator size="small" color={c.onAccent} />
+          <Text style={s.heroSub}>Searching</Text>
+        </View>
+      ) : (
+        <Press
+          label={fresh ? 'See buyers' : 'Find work'}
+          style={s.heroButton}
+          onPress={() => (fresh ? router.navigate('/buyers') : findWork(v.machine.id))}>
+          <Text style={s.heroButtonText}>{fresh ? 'See buyers' : search?.state === 'failed' ? 'Try again' : 'Find work'}</Text>
+        </Press>
+      )}
+    </LinearGradient>
+  );
+}
+
 /**
  * Today's "Free days to fill": every machine with unbooked days in the next two weeks,
- * soonest first, each one tap away from the AI looking for work for it.
+ * soonest first, each one tap away from the AI looking for work for it. The first one is
+ * already on the highlight card above, so it starts from the second.
  */
 export function FindWorkSection({ views }: { views: MachineView[] }) {
   const s = useStyles();
   const autoOn = usePrefs().autoFind;
   const now = today();
-  const open = views
-    .filter((v) => v.status !== 'maintenance')
-    .map((v) => ({ v, free: gap(v, now) }))
-    .filter((x): x is { v: MachineView; free: NonNullable<ReturnType<typeof gap>> } => x.free !== null)
-    .sort((a, b) => a.free.from.localeCompare(b.free.from));
-  if (!open.length) return null;
+  const open = openMachines(views, now).slice(1);
 
   return (
     <>
-      <Section title="Free days to fill" />
+      {open.length > 0 && <Section title="Also free" />}
+      {open.length > 0 && (
       <Box flush>
         {open.map(({ v, free }, i) => (
           <View key={v.machine.id}>
@@ -72,7 +120,8 @@ export function FindWorkSection({ views }: { views: MachineView[] }) {
           </View>
         ))}
       </Box>
-      <Text style={[s.meta, { marginTop: -S.sm }]}>
+      )}
+      <Text style={s.meta}>
         {autoOn
           ? 'Machines free within 3 days are searched by themselves when you open the app — you get a notification when buyers turn up.'
           : 'The AI finds companies near you that buy this kind of work, with a message ready to send.'}
@@ -105,4 +154,10 @@ const useStyles = makeStyles((c) => ({
   meta: { ...type.meta, color: c.muted },
   searching: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   both: { flexDirection: 'row', alignItems: 'center', gap: S.md },
+  hero: { borderRadius: R.box, padding: S.lg + 2, flexDirection: 'row', alignItems: 'center', gap: S.md, boxShadow: '0 10px 28px rgba(47,75,209,0.25)' },
+  heroTitle: { fontSize: 16, fontWeight: '800', color: c.onAccent },
+  heroSub: { ...type.meta, color: c.onAccent, opacity: 0.9 },
+  heroBusy: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroButton: { minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.pill, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
+  heroButtonText: { fontSize: 14, fontWeight: '800', color: '#15171c' },
 }));

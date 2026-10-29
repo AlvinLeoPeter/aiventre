@@ -81,9 +81,16 @@ export default function RootLayout() {
         <Stack.Screen name="assistant" options={{ headerShown: false }} />
         <Stack.Screen name="expert" options={{ headerShown: false }} />
         <Stack.Screen name="trust" options={{ title: 'Trust pack' }} />
+        <Stack.Screen name="settings/details" options={{ title: 'Shop details' }} />
+        <Stack.Screen name="settings/billing" options={{ title: 'GST and bank' }} />
+        <Stack.Screen name="settings/work" options={{ title: 'Work you do' }} />
+        <Stack.Screen name="settings/app" options={{ title: 'App and AI' }} />
         <Stack.Screen name="open-jobs" options={{ title: 'Open jobs' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
-        <Stack.Screen name="bills" options={{ title: 'Bills' }} />
+        <Stack.Screen
+          name="new"
+          options={{ presentation: 'formSheet', title: 'New', headerShown: false, sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true, sheetCornerRadius: 28 }}
+        />
         <Stack.Screen name="invoice/[id]" options={{ title: '' }} />
         <Stack.Screen name="invoice/edit" options={{ title: 'Invoice' }} />
       </Stack>

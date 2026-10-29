@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Glow } from '@/components/glow';
 import { STATUS_LABEL, type Status } from '@/lib/model';
 import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
 
@@ -91,20 +92,22 @@ export function Press({
 }
 
 /**
- * A scrolling page. Keeps the field you're typing in visible above the keyboard: on iOS
- * the scroll view grows by the keyboard's height; on Android the page shrinks to fit.
+ * A scrolling page over the slow colour glow. Keeps the field you're typing in visible above
+ * the keyboard: on iOS the scroll view grows by the keyboard's height; on Android the page
+ * shrinks to fit. Room at the bottom so the floating tab bar never covers the last card.
  */
 export function Screen({ children, title, sub, padTop = true }: { children: ReactNode; title?: string; sub?: string; padTop?: boolean }) {
   const insets = useSafeAreaInsets();
   const s = useStyles();
   return (
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'android' ? 'height' : undefined}>
+      <Glow />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingTop: padTop ? insets.top + S.md : S.lg,
           paddingHorizontal: S.lg,
-          paddingBottom: S.xxl * 2,
+          paddingBottom: 128,
           gap: S.lg,
         }}
         automaticallyAdjustKeyboardInsets
@@ -122,7 +125,7 @@ export function Screen({ children, title, sub, padTop = true }: { children: Reac
   );
 }
 
-/** A plain container: surface colour, hairline border, no shadow. */
+/** A card: frosted glass with a bright hairline edge. */
 export function Box({ children, style, flush }: { children: ReactNode; style?: StyleProp<ViewStyle>; flush?: boolean }) {
   const s = useStyles();
   return <View style={[s.box, flush && { padding: 0, gap: 0 }, style]}>{children}</View>;
@@ -137,7 +140,7 @@ export function Rule({ inset = 0 }: { inset?: number }) {
 type ButtonProps = {
   label: string;
   onPress: () => void;
-  kind?: 'primary' | 'secondary' | 'quiet' | 'danger';
+  kind?: 'primary' | 'accent' | 'secondary' | 'quiet' | 'danger';
   icon?: keyof typeof Ionicons.glyphMap;
   disabled?: boolean;
   flex?: boolean;
@@ -149,7 +152,8 @@ export function Button({ label, onPress, kind = 'primary', icon, disabled, flex,
   const s = useStyles();
   const look = {
     primary: { bg: c.primary, fg: c.onPrimary, border: c.primary },
-    secondary: { bg: c.surface, fg: c.text, border: c.border },
+    accent: { bg: c.accent, fg: c.onAccent, border: c.accent },
+    secondary: { bg: c.surface, fg: c.text, border: c.edge },
     quiet: { bg: 'transparent', fg: c.muted, border: 'transparent' },
     danger: { bg: 'transparent', fg: c.idle, border: 'transparent' },
   }[kind];
@@ -325,17 +329,17 @@ const useStyles = makeStyles((c) => ({
   box: { backgroundColor: c.surface, borderRadius: R.box, borderWidth: 1, borderColor: c.border, padding: S.lg, gap: S.md },
   rule: { height: 1, backgroundColor: c.rule },
   button: {
-    minHeight: 48,
-    borderRadius: R.control,
+    minHeight: 50,
+    borderRadius: R.pill,
     borderWidth: 1,
-    paddingHorizontal: S.lg,
+    paddingHorizontal: S.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: S.sm,
   },
-  buttonSmall: { minHeight: 44, paddingHorizontal: S.md },
-  buttonText: { fontSize: 15, fontWeight: '600' },
+  buttonSmall: { minHeight: 44, paddingHorizontal: S.lg },
+  buttonText: { fontSize: 15, fontWeight: '700' },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -344,34 +348,34 @@ const useStyles = makeStyles((c) => ({
     paddingHorizontal: 14,
     borderRadius: R.pill,
     borderWidth: 1,
-    borderColor: c.border,
+    borderColor: c.edge,
     backgroundColor: c.surface,
   },
   chipOn: { backgroundColor: c.primary, borderColor: c.primary },
-  chipText: { fontSize: 14, fontWeight: '500', color: c.text },
+  chipText: { fontSize: 14, fontWeight: '600', color: c.text },
   chipTextOn: { color: c.onPrimary },
-  segments: { flexDirection: 'row', backgroundColor: c.raised, borderRadius: R.control, padding: 3, borderWidth: 1, borderColor: c.border },
-  segment: { flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', borderRadius: R.control - 3 },
-  segmentOn: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
-  segmentText: { fontSize: 14, fontWeight: '500', color: c.muted },
-  segmentTextOn: { color: c.text, fontWeight: '600' },
+  segments: { flexDirection: 'row', backgroundColor: c.surface, borderRadius: R.pill, padding: 4, borderWidth: 1, borderColor: c.border },
+  segment: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: R.pill },
+  segmentOn: { backgroundColor: c.primary },
+  segmentText: { fontSize: 14, fontWeight: '600', color: c.muted },
+  segmentTextOn: { color: c.onPrimary, fontWeight: '700' },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 3, paddingHorizontal: 9, borderRadius: R.pill, alignSelf: 'flex-start' },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  pillText: { fontSize: 12, fontWeight: '600' },
-  track: { height: 4, borderRadius: 2, backgroundColor: c.free, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 2 },
+  pillText: { fontSize: 12, fontWeight: '700' },
+  track: { height: 6, borderRadius: 3, backgroundColor: c.track, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 3 },
   section: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: S.md },
   heading: { ...type.heading, color: c.text },
-  link: { fontSize: 15, fontWeight: '600', color: c.text },
+  link: { fontSize: 15, fontWeight: '700', color: c.accent },
   label: { ...type.label, color: c.muted },
   hint: { ...type.meta, color: c.faint },
   input: {
     backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: c.border,
+    borderColor: c.edge,
     borderRadius: R.control,
     paddingHorizontal: 14,
-    minHeight: 48,
+    minHeight: 50,
     color: c.text,
     fontSize: 16,
   },

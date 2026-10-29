@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedProps, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { makeStyles, type, useTheme } from '@/lib/theme';
 
@@ -12,7 +12,7 @@ const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
  * One ring, one number: how much of the next two weeks is booked. It fills in when the
  * screen opens and moves when a job changes — the one piece of motion on Today.
  */
-export function Ring({ value, size = 104, stroke = 11, label, caption }: { value: number; size?: number; stroke?: number; label: string; caption?: string }) {
+export function Ring({ value, size = 104, stroke = 11, label, caption, bare }: { value: number; size?: number; stroke?: number; label: string; caption?: string; bare?: boolean }) {
   const { c } = useTheme();
   const s = useStyles();
   const reduced = useReducedMotion();
@@ -30,12 +30,18 @@ export function Ring({ value, size = 104, stroke = 11, label, caption }: { value
     <View style={{ width: size, height: size }} accessibilityRole="progressbar" accessibilityLabel={`${Math.round(value * 100)}% ${label}${caption ? `, ${caption}` : ''}`}>
       {/* Rotated so the ring starts at twelve o'clock, like a watch. */}
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={c.free} strokeWidth={stroke} fill="none" />
+        <Defs>
+          <LinearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={c.accent} />
+            <Stop offset="1" stopColor={c.accent2} />
+          </LinearGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={c.track} strokeWidth={stroke} fill="none" />
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={c.booked}
+          stroke="url(#ring)"
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${length} ${length}`}
@@ -43,10 +49,12 @@ export function Ring({ value, size = 104, stroke = 11, label, caption }: { value
           fill="none"
         />
       </Svg>
-      <View style={s.center}>
-        <Text style={s.value}>{Math.round(value * 100)}%</Text>
-        <Text style={s.label}>{label}</Text>
-      </View>
+      {!bare && (
+        <View style={s.center}>
+          <Text style={s.value}>{Math.round(value * 100)}%</Text>
+          <Text style={s.label}>{label}</Text>
+        </View>
+      )}
     </View>
   );
 }
