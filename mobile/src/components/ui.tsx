@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Glow } from '@/components/glow';
 import { STATUS_LABEL, type Status } from '@/lib/model';
-import { makeStyles, type Palette, R, S, type, useTheme } from '@/lib/theme';
+import { makeStyles, type Palette, R, S, TILES, type Tone, type, useTheme } from '@/lib/theme';
 
 export const tap = () => {
   if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -323,6 +323,10 @@ export function ListField({
 }
 
 const useStyles = makeStyles((c) => ({
+  tile: { borderRadius: 22, padding: 14, gap: 6, borderWidth: 2 },
+  tileDisc: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  tileValue: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, ...type.num },
+  tileLabel: { fontSize: 12, fontWeight: '700' },
   screen: { flex: 1, backgroundColor: c.ground },
   title: { ...type.title, color: c.text },
   sub: { ...type.meta, color: c.muted },
@@ -380,3 +384,41 @@ const useStyles = makeStyles((c) => ({
     fontSize: 16,
   },
 }));
+
+/** A coloured tile with a big number: one count at a glance, tap to see those. */
+export function Tile({
+  tone,
+  icon,
+  value,
+  label,
+  onPress,
+  on,
+}: {
+  tone: Tone;
+  icon: keyof typeof Ionicons.glyphMap;
+  value: number | string;
+  label: string;
+  onPress?: () => void;
+  on?: boolean;
+}) {
+  const { scheme } = useTheme();
+  const t = TILES[scheme][tone];
+  const s = useStyles();
+  const body = (
+    <View style={[s.tile, { backgroundColor: t.bg, borderColor: on ? t.disc : 'transparent' }]}>
+      <View style={[s.tileDisc, { backgroundColor: t.disc }]}>
+        <Ionicons name={icon} size={16} color="#ffffff" />
+      </View>
+      <Text style={[s.tileValue, { color: t.ink }]}>{value}</Text>
+      <Text style={[s.tileLabel, { color: t.ink }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+  if (!onPress) return <View style={{ flexBasis: '45%', flexGrow: 1 }}>{body}</View>;
+  return (
+    <Press onPress={onPress} label={`${value} ${label}`} scale={0.96} style={{ flexBasis: '45%', flexGrow: 1 }}>
+      {body}
+    </Press>
+  );
+}

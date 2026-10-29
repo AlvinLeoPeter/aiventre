@@ -4,6 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Box, Button, Field, Label, Link, Rule, Screen, Section, Segmented, StatusPill, tap } from '@/components/ui';
+import { RingTile } from '@/components/ring';
 import { type PlanItem, type QuotePlan, runTask, shopForAI } from '@/lib/api';
 import { choosePdf, choosePhoto, type PickedDrawing, takePhoto } from '@/lib/drawing';
 import type { Status } from '@/lib/model';
@@ -125,17 +126,24 @@ function ItemCard({
       )}
 
       <View style={s.row}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={s.meta}>Price per unit</Text>
+          <Text style={s.bigPrice}>{inr(p.unitPrice)}</Text>
+          <Text style={s.meta}>
+            × {p.qty} = <Text style={{ fontWeight: '700', color: c.text }}>{inr(p.total)}</Text>
+          </Text>
+        </View>
         <View style={{ width: 96 }}>
           <Field label="Quantity" value={String(edit.qty)} onChangeText={(v) => onEdit({ ...edit, qty: num(v) })} keyboardType="number-pad" />
         </View>
-        <View style={{ flex: 1, gap: 2, alignItems: 'flex-end' }}>
-          <Text style={s.meta}>Price per unit</Text>
-          <Text style={s.price}>{inr(p.unitPrice)}</Text>
-          <Text style={s.meta}>
-            × {p.qty} = {inr(p.total)}
-          </Text>
-        </View>
       </View>
+      {p.unitPrice > 0 && (
+        <View style={s.rings}>
+          <RingTile value={`${Math.round(p.minutes * 10) / 10} min`} label="Machine time" share={p.machining / p.unitPrice} color={c.accent} />
+          <RingTile value={inr(p.material)} label="Material" share={p.material / p.unitPrice} color={c.idle} />
+          <RingTile value={`${rates.margin}%`} label="Your margin" share={(p.unitPrice - p.cost) / p.unitPrice} color={c.running} />
+        </View>
+      )}
 
       <Rule />
       <Fold title="Can your shop make it?" right={`${item.capacity.filter((x) => x.status === 'ok').length}/${item.capacity.length} ok`}>
@@ -485,6 +493,8 @@ const useStyles = makeStyles((c) => ({
   meta: { ...type.meta, color: c.muted },
   label: { ...type.label, color: c.muted },
   price: { ...type.value, fontSize: 22, color: c.text },
+  bigPrice: { fontSize: 40, lineHeight: 46, fontWeight: '800', letterSpacing: -1.2, color: c.text, ...type.num },
+  rings: { flexDirection: 'row', gap: S.sm },
   row: { flexDirection: 'row', gap: S.sm, alignItems: 'center' },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md },
   line: { flexDirection: 'row', gap: S.sm, alignItems: 'flex-start' },

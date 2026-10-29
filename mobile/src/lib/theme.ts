@@ -97,6 +97,23 @@ export const GLOWS = {
   dark: { from: ['#2f4bd1', '#7a3fd1', '#0f7a6e'], to: ['#3f6bff', '#b03fd1', '#0f5a9a'], strength: 0.6 },
 } as const;
 
+/** Coloured stat tiles (Buyers' counts and the like): background, number and label ink, icon disc. */
+export const TILES = {
+  light: {
+    blue: { bg: '#dce4ff', ink: '#1a2c8a', disc: '#2f4bd1' },
+    green: { bg: '#ddf3e2', ink: '#17542a', disc: '#2b8a3e' },
+    orange: { bg: '#ffe6d5', ink: '#7a2a05', disc: '#d9480f' },
+    pink: { bg: '#fbe0ec', ink: '#7a1238', disc: '#c2255c' },
+  },
+  dark: {
+    blue: { bg: 'rgba(76,125,255,0.20)', ink: '#a8c0ff', disc: '#4c7dff' },
+    green: { bg: 'rgba(48,209,88,0.18)', ink: '#8ce0a2', disc: '#30d158' },
+    orange: { bg: 'rgba(255,159,10,0.20)', ink: '#ffc27a', disc: '#ff9f0a' },
+    pink: { bg: 'rgba(255,55,95,0.20)', ink: '#ff9cb2', disc: '#ff375f' },
+  },
+} as const;
+export type Tone = keyof typeof TILES.light;
+
 export const PALETTES = { light, dark };
 export type Scheme = keyof typeof PALETTES;
 

@@ -9,7 +9,7 @@ export default function TabLayout() {
   if (!shop) return <Redirect href="/onboarding" />;
 
   return (
-    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false }}>
+    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false, animation: 'shift' }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />
       <Tabs.Screen name="machines" options={{ title: 'Machines' }} />
       <Tabs.Screen name="buyers" options={{ title: 'Buyers' }} />
