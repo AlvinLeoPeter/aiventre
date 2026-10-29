@@ -127,3 +127,76 @@ const useStyles = makeStyles((c) => ({
     boxShadow: '0 8px 20px rgba(21,23,28,0.25)',
   },
 }));
+
+// The sidebar has room for every place, including the two the phone reaches from + and Today.
+const SIDE = [
+  { name: 'index', label: 'Dashboard', on: 'grid', off: 'grid-outline' },
+  { name: 'machines', label: 'Machines', on: 'cog', off: 'cog-outline' },
+  { name: 'buyers', label: 'Buyers', on: 'people', off: 'people-outline' },
+  { name: 'money', label: 'Money', on: 'wallet', off: 'wallet-outline' },
+  { name: 'quote', label: 'Quote', on: 'calculator', off: 'calculator-outline' },
+  { name: 'shop', label: 'My shop', on: 'storefront', off: 'storefront-outline' },
+] as const;
+
+// In a browser, Pressable also says whether the mouse is over it.
+const hover = (st: object) => !!(st as { hovered?: boolean }).hovered;
+
+/** On a computer: a glass sidebar on the left with every place, a New button and settings. */
+export function SideBar({ state, navigateToTab }: BottomTabBarProps) {
+  const { c } = useTheme();
+  const s = useSideStyles();
+  const current = state.routes[state.index]?.name;
+  return (
+    <View style={s.side}>
+      <View style={s.brand}>
+        <View style={s.logo}>
+          <Text style={s.logoText}>A</Text>
+        </View>
+        <Text style={s.brandText}>Aiventre</Text>
+      </View>
+      <Press label="New: quote a drawing, add a job or a buyer" scale={0.97} style={s.new} onPress={() => router.push('/new')}>
+        <Ionicons name="add" size={20} color={c.onPrimary} />
+        <Text style={s.newText}>New</Text>
+      </Press>
+      <View style={{ gap: 4 }}>
+        {SIDE.map((t) => {
+          const route = state.routes.find((r) => r.name === t.name);
+          if (!route) return null;
+          const on = current === t.name;
+          return (
+            <Pressable
+              key={t.name}
+              accessibilityRole="tab"
+              accessibilityLabel={t.label}
+              accessibilityState={{ selected: on }}
+              style={(st) => [s.item, on ? s.itemOn : hover(st) && s.itemHover]}
+              onPress={() => !on && navigateToTab(route.key)}>
+              <Ionicons name={on ? t.on : t.off} size={20} color={on ? c.text : c.muted} />
+              <Text style={[s.itemText, on && s.itemTextOn]}>{t.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={{ flex: 1 }} />
+      <Pressable accessibilityRole="button" style={(st) => [s.item, hover(st) && s.itemHover]} onPress={() => router.push('/settings/app')}>
+        <Ionicons name="settings-outline" size={20} color={c.muted} />
+        <Text style={s.itemText}>Settings</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const useSideStyles = makeStyles((c) => ({
+  side: { width: 240, padding: 16, gap: 18, borderRightWidth: 1, borderRightColor: c.rule, backgroundColor: c.surface },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 6, paddingTop: 8 },
+  logo: { width: 34, height: 34, borderRadius: 17, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
+  logoText: { fontSize: 16, fontWeight: '800', color: c.onPrimary },
+  brandText: { fontSize: 18, fontWeight: '800', color: c.text, letterSpacing: -0.3 },
+  new: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 46, borderRadius: 999, backgroundColor: c.primary },
+  newText: { fontSize: 15, fontWeight: '800', color: c.onPrimary },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: 14 },
+  itemOn: { backgroundColor: c.active },
+  itemHover: { backgroundColor: c.raised },
+  itemText: { fontSize: 15, fontWeight: '600', color: c.muted },
+  itemTextOn: { fontWeight: '800', color: c.text },
+}));

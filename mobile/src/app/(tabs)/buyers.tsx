@@ -7,6 +7,7 @@ import { LeadRow } from '@/components/lead-card';
 import { Box, Button, Chip, Link, Rule, Screen, Section, Tile } from '@/components/ui';
 import { clearSearch, findWork, useSearches } from '@/lib/find';
 import { followUpDue, type Lead } from '@/lib/model';
+import { useWide } from '@/lib/layout';
 import { useOpenJobs } from '@/lib/open-jobs';
 import { useData } from '@/lib/store';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
@@ -78,6 +79,7 @@ export default function BuyersScreen() {
 
   const activity = Object.entries(searches).filter(([id]) => data.machines.some((m) => m.id === id));
   const savedJobs = useOpenJobs().jobs.filter((j) => j.saved).length;
+  const basis = useWide() ? '22%' : '45%'; // four tiles a row on a computer, two on a phone
   const count = (id: string) => leads.filter(FILTERS.find((f) => f.id === id)!.test).length;
   // Tapping a tile shows those buyers; tapping it again goes back to the to-do list.
   const pick = (id: string) => setFilter((f) => (f === id ? 'todo' : id));
@@ -86,10 +88,10 @@ export default function BuyersScreen() {
     <Screen title="Buyers" sub="Companies that could send you work">
       {leads.length > 0 && (
         <View style={s.tiles}>
-          <Tile tone="blue" icon="paper-plane" value={count('new')} label="To message" on={filter === 'new'} onPress={() => pick('new')} />
-          <Tile tone="green" icon="chatbubbles" value={count('talking')} label="Talking to you" on={filter === 'talking'} onPress={() => pick('talking')} />
-          <Tile tone="orange" icon="time" value={count('due')} label="Follow up today" on={filter === 'due'} onPress={() => pick('due')} />
-          <Tile tone="pink" icon="checkmark-done" value={count('won')} label="Orders won" on={filter === 'won'} onPress={() => pick('won')} />
+          <Tile tone="blue" icon="paper-plane" value={count('new')} label="To message" basis={basis} on={filter === 'new'} onPress={() => pick('new')} />
+          <Tile tone="green" icon="chatbubbles" value={count('talking')} label="Talking to you" basis={basis} on={filter === 'talking'} onPress={() => pick('talking')} />
+          <Tile tone="orange" icon="time" value={count('due')} label="Follow up today" basis={basis} on={filter === 'due'} onPress={() => pick('due')} />
+          <Tile tone="pink" icon="checkmark-done" value={count('won')} label="Orders won" basis={basis} on={filter === 'won'} onPress={() => pick('won')} />
         </View>
       )}
       <View style={s.row}>

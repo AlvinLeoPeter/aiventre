@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Glow } from '@/components/glow';
+import { useWide } from '@/lib/layout';
 import { STATUS_LABEL, type Status } from '@/lib/model';
 import { makeStyles, type Palette, R, S, TILES, type Tone, type, useTheme } from '@/lib/theme';
 
@@ -96,8 +97,21 @@ export function Press({
  * the keyboard: on iOS the scroll view grows by the keyboard's height; on Android the page
  * shrinks to fit. Room at the bottom so the floating tab bar never covers the last card.
  */
-export function Screen({ children, title, sub, padTop = true }: { children: ReactNode; title?: string; sub?: string; padTop?: boolean }) {
+export function Screen({
+  children,
+  title,
+  sub,
+  padTop = true,
+  maxWidth = 880,
+}: {
+  children: ReactNode;
+  title?: string;
+  sub?: string;
+  padTop?: boolean;
+  maxWidth?: number; // on a wide computer screen, how wide the page's content gets
+}) {
   const insets = useSafeAreaInsets();
+  const wide = useWide();
   const s = useStyles();
   return (
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'android' ? 'height' : undefined}>
@@ -105,9 +119,10 @@ export function Screen({ children, title, sub, padTop = true }: { children: Reac
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: padTop ? insets.top + S.md : S.lg,
-          paddingHorizontal: S.lg,
-          paddingBottom: 112,
+          paddingTop: padTop ? insets.top + (wide ? S.xl : S.md) : S.lg,
+          paddingHorizontal: wide ? S.xxl : S.lg,
+          paddingBottom: wide ? S.xxl * 2 : 112,
+          ...(wide && { width: '100%', maxWidth, alignSelf: 'center' as const }),
           gap: S.lg,
         }}
         automaticallyAdjustKeyboardInsets
@@ -393,6 +408,7 @@ export function Tile({
   label,
   onPress,
   on,
+  basis = '45%',
 }: {
   tone: Tone;
   icon: keyof typeof Ionicons.glyphMap;
@@ -400,6 +416,7 @@ export function Tile({
   label: string;
   onPress?: () => void;
   on?: boolean;
+  basis?: `${number}%`; // share of the row: two tiles a row on a phone, four on a computer
 }) {
   const { scheme } = useTheme();
   const t = TILES[scheme][tone];
@@ -415,9 +432,9 @@ export function Tile({
       </Text>
     </View>
   );
-  if (!onPress) return <View style={{ flexBasis: '45%', flexGrow: 1 }}>{body}</View>;
+  if (!onPress) return <View style={{ flexBasis: basis, flexGrow: 1 }}>{body}</View>;
   return (
-    <Press onPress={onPress} label={`${value} ${label}`} scale={0.96} style={{ flexBasis: '45%', flexGrow: 1 }}>
+    <Press onPress={onPress} label={`${value} ${label}`} scale={0.96} style={{ flexBasis: basis, flexGrow: 1 }}>
       {body}
     </Press>
   );
