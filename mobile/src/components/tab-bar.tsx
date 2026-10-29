@@ -187,7 +187,8 @@ export function SideBar({ state, navigateToTab }: BottomTabBarProps) {
 }
 
 const useSideStyles = makeStyles((c) => ({
-  side: { width: 240, padding: 16, gap: 18, borderRightWidth: 1, borderRightColor: c.rule, backgroundColor: c.surface },
+  // Frosted glass over the same glow as the page, with a bright hairline edge like the cards.
+  side: { width: 240, padding: 16, gap: 18, borderRightWidth: 1, borderRightColor: c.border, backgroundColor: c.raised },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 6, paddingTop: 8 },
   logo: { width: 34, height: 34, borderRadius: 17, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
   logoText: { fontSize: 16, fontWeight: '800', color: c.onPrimary },

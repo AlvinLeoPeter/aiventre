@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
@@ -41,11 +40,20 @@ export const statusColors = (c: Palette, s: Status) =>
 
 // Phones only accept a few named curves as text, so custom curves go through cubicBezier().
 const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
+
+// In a browser a new page has no slide of its own, so it fades in and rises a few pixels instead.
+const ARRIVE = {
+  animationName: { from: { opacity: 0, transform: [{ translateY: 10 }] }, to: { opacity: 1, transform: [{ translateY: 0 }] } },
+  animationDuration: 260,
+  animationTimingFunction: EASE_OUT,
+};
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
  * Anything tappable. It sinks slightly the moment a finger lands (not when it lifts),
- * which is what makes a tap feel instant. Skipped when the phone asks for less motion.
+ * which is what makes a tap feel instant, and springs back on an ease-out curve. With a
+ * mouse it also lifts a pixel as the pointer comes over it, so it feels alive before the
+ * click. Skipped when the phone asks for less motion.
  */
 export function Press({
   onPress,
@@ -65,7 +73,9 @@ export function Press({
   children: ReactNode;
 }) {
   const [down, setDown] = useState(false);
+  const [hover, setHover] = useState(false);
   const reduced = useReducedMotion();
+  const lift = hover && !down && !disabled && !reduced ? -1 : 0;
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -73,6 +83,8 @@ export function Press({
       disabled={disabled}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
+      onHoverIn={() => setHover(true)}
+      onHoverOut={() => setHover(false)}
       onPress={() => {
         tap();
         onPress();
@@ -81,9 +93,9 @@ export function Press({
         style,
         down && pressedStyle,
         {
-          transform: [{ scale: down && !reduced ? scale : 1 }],
+          transform: [{ translateY: lift }, { scale: down && !reduced ? scale : 1 }],
           transitionProperty: 'transform',
-          transitionDuration: 120,
+          transitionDuration: down ? 100 : 180,
           transitionTimingFunction: EASE_OUT,
         },
       ]}>
@@ -112,12 +124,13 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   const wide = useWide();
+  const reduced = useReducedMotion();
   const s = useStyles();
   return (
-    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'android' ? 'height' : undefined}>
+    <KeyboardAvoidingView style={[s.screen, wide && { backgroundColor: 'transparent' }]} behavior={Platform.OS === 'android' ? 'height' : undefined}>
       <Glow />
-      <ScrollView
-        style={{ flex: 1 }}
+      <Animated.ScrollView
+        style={[{ flex: 1 }, Platform.OS === 'web' && !reduced && ARRIVE]}
         contentContainerStyle={{
           paddingTop: padTop ? insets.top + (wide ? S.xl : S.md) : S.lg,
           paddingHorizontal: wide ? S.xxl : S.lg,
@@ -135,7 +148,7 @@ export function Screen({
           </View>
         )}
         {children}
-      </ScrollView>
+      </Animated.ScrollView>
     </KeyboardAvoidingView>
   );
 }
