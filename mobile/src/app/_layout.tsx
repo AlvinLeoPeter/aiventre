@@ -13,17 +13,18 @@ import { autoWatchJobs, loadOpenJobs } from '@/lib/open-jobs';
 import { loadPhotos } from '@/lib/photos';
 import { startSync } from '@/lib/sync';
 import { loadPrefs } from '@/lib/prefs';
+import { PHONE_WIDTH, useWide } from '@/lib/layout';
 import { loadData, useReady } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 
-// In a computer's browser the app keeps a phone-like width, centred, instead of stretching.
-const APP_WIDTH = 560;
 
 export default function RootLayout() {
   const ready = useReady();
   const { c, scheme } = useTheme();
+  // A narrow browser window gets a centred phone-width column; a wide one the desktop layout.
+  const wide = useWide();
 
   useEffect(() => {
     // Screens' kept results load before the screens open, so they can start from them.
@@ -68,7 +69,7 @@ export default function RootLayout() {
     <ThemeProvider value={navTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: c.ground, alignItems: 'center' }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: Platform.OS === 'web' ? APP_WIDTH : undefined }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: Platform.OS === 'web' && !wide ? PHONE_WIDTH : undefined }}>
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: c.ground },

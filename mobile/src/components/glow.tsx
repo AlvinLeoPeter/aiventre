@@ -4,6 +4,7 @@ import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useIsFocused } from 'expo-router';
 
+import { PHONE_WIDTH, useWide } from '@/lib/layout';
 import { usePrefs } from '@/lib/prefs';
 import { GLOWS, useTheme } from '@/lib/theme';
 
@@ -66,8 +67,9 @@ function Blob({ blob, from, to, width, move }: { blob: (typeof BLOBS)[number]; f
 export function Glow() {
   const { scheme } = useTheme();
   const { glow } = usePrefs();
-  // On a wide browser window the app is a centred column, so size the glow to that column.
-  const width = Math.min(useWindowDimensions().width, 560);
+  // In a narrow browser window the app is a centred column, so size the glow to that column.
+  const window = useWindowDimensions().width;
+  const width = useWide() ? window : Math.min(window, PHONE_WIDTH);
   const focused = useIsFocused();
   const reduced = useReducedMotion();
   if (glow === 'off') return null;
