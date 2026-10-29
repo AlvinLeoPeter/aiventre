@@ -101,7 +101,7 @@ export function Dashboard({ views }: { views: MachineView[] }) {
       </View>
 
       <View style={s.kpis}>
-        <Kpi label="Booked · 2 weeks" value={`${Math.round(booked * 100)}%`} sub={`${views.length} machine${views.length === 1 ? '' : 's'}`} to="/machines">
+        <Kpi label="Booked" value={`${Math.round(booked * 100)}%`} sub="next 2 weeks" to="/machines">
           <Ring value={booked} size={64} stroke={9} label="booked" bare />
         </Kpi>
         <Kpi label="Free machine-days" value={String(free)} sub={idle ? `${idle} machine${idle === 1 ? '' : 's'} idle now` : 'nothing idle now'} to="/machines" tone={idle ? c.idle : undefined} />

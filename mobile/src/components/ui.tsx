@@ -114,7 +114,7 @@ export function Screen({
   const wide = useWide();
   const s = useStyles();
   return (
-    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'android' ? 'height' : undefined}>
+    <KeyboardAvoidingView style={[s.screen, wide && { backgroundColor: 'transparent' }]} behavior={Platform.OS === 'android' ? 'height' : undefined}>
       <Glow />
       <ScrollView
         style={{ flex: 1 }}

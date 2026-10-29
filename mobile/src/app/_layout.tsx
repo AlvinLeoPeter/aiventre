@@ -13,6 +13,7 @@ import { autoWatchJobs, loadOpenJobs } from '@/lib/open-jobs';
 import { loadPhotos } from '@/lib/photos';
 import { startSync } from '@/lib/sync';
 import { loadPrefs } from '@/lib/prefs';
+import { BackdropGlow } from '@/components/glow';
 import { PHONE_WIDTH, useWide } from '@/lib/layout';
 import { loadData, useReady } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -60,22 +61,25 @@ export default function RootLayout() {
   if (!ready) return null;
 
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  // On a computer the pages are see-through, so the one glow shows behind sidebar and page alike.
+  const page = wide ? 'transparent' : c.ground;
   const navTheme = {
     ...base,
-    colors: { ...base.colors, background: c.ground, card: c.ground, text: c.text, border: c.border, primary: c.text },
+    colors: { ...base.colors, background: page, card: page, text: c.text, border: c.border, primary: c.text },
   };
 
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: c.ground, alignItems: 'center' }}>
+        {wide && <BackdropGlow />}
         <View style={{ flex: 1, width: '100%', maxWidth: Platform.OS === 'web' && !wide ? PHONE_WIDTH : undefined }}>
           <Stack
             screenOptions={{
-              headerStyle: { backgroundColor: c.ground },
+              headerStyle: { backgroundColor: page },
               headerTintColor: c.text,
               headerShadowVisible: false,
-              contentStyle: { backgroundColor: c.ground },
+              contentStyle: { backgroundColor: page },
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />

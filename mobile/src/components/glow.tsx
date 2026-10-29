@@ -60,21 +60,10 @@ function Blob({ blob, from, to, width, move }: { blob: (typeof BLOBS)[number]; f
   );
 }
 
-/**
- * The slow colour glow behind a screen. It only moves while its screen is on show, and stays
- * still when the phone asks for less motion or the owner turned it off in My shop.
- */
-export function Glow() {
+/** The glow itself: three drifting, colour-changing patches over the whole of its parent. */
+function GlowLayer({ width, move }: { width: number; move: boolean }) {
   const { scheme } = useTheme();
-  const { glow } = usePrefs();
-  // In a narrow browser window the app is a centred column, so size the glow to that column.
-  const window = useWindowDimensions().width;
-  const width = useWide() ? window : Math.min(window, PHONE_WIDTH);
-  const focused = useIsFocused();
-  const reduced = useReducedMotion();
-  if (glow === 'off') return null;
   const g = GLOWS[scheme];
-  const move = focused && !reduced && glow === 'on';
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: g.strength, overflow: 'hidden' }]}>
       {BLOBS.map((b, i) => (
@@ -82,4 +71,30 @@ export function Glow() {
       ))}
     </View>
   );
+}
+
+/**
+ * The slow colour glow behind a screen. It only moves while its screen is on show, and stays
+ * still when the phone asks for less motion or the owner turned it off in settings. On a
+ * computer's wide layout there's one glow behind the sidebar and the page together instead
+ * (BackdropGlow), so this draws nothing there.
+ */
+export function Glow() {
+  const { glow } = usePrefs();
+  // In a narrow browser window the app is a centred column, so size the glow to that column.
+  const window = useWindowDimensions().width;
+  const wide = useWide();
+  const focused = useIsFocused();
+  const reduced = useReducedMotion();
+  if (glow === 'off' || wide) return null;
+  return <GlowLayer width={Math.min(window, PHONE_WIDTH)} move={focused && !reduced && glow === 'on'} />;
+}
+
+/** The desktop layout's one glow, behind the sidebar and every page, so they read as one surface. */
+export function BackdropGlow() {
+  const { glow } = usePrefs();
+  const { width } = useWindowDimensions();
+  const reduced = useReducedMotion();
+  if (glow === 'off') return null;
+  return <GlowLayer width={width} move={!reduced && glow === 'on'} />;
 }
