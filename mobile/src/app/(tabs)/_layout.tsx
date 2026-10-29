@@ -1,3 +1,4 @@
+import { Easing } from 'react-native';
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
@@ -9,7 +10,12 @@ export default function TabLayout() {
   if (!shop) return <Redirect href="/onboarding" />;
 
   return (
-    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false, animation: 'shift' }}>
+    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{
+        headerShown: false,
+        // A quick cross-fade between tabs: cheap enough to stay smooth on any phone.
+        animation: 'fade',
+        transitionSpec: { animation: 'timing', config: { duration: 180, easing: Easing.out(Easing.cubic) } },
+      }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />
       <Tabs.Screen name="machines" options={{ title: 'Machines' }} />
       <Tabs.Screen name="buyers" options={{ title: 'Buyers' }} />

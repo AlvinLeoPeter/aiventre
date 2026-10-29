@@ -107,7 +107,7 @@ export function Screen({ children, title, sub, padTop = true }: { children: Reac
         contentContainerStyle={{
           paddingTop: padTop ? insets.top + S.md : S.lg,
           paddingHorizontal: S.lg,
-          paddingBottom: 128,
+          paddingBottom: 112,
           gap: S.lg,
         }}
         automaticallyAdjustKeyboardInsets

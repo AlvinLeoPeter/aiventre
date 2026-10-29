@@ -27,7 +27,7 @@ const light = {
   accent: '#2f4bd1',
   accent2: '#7b4fe0',
   onAccent: '#ffffff',
-  bar: '#ffffff', // the floating tab bar: solid, so text scrolling under it doesn't show
+  bar: 'rgba(255,255,255,0.86)', // the floating tab bar where there's no real glass: see-through, still readable
 
   running: '#2b8a3e',
   runningPill: '#ddf3e2',
@@ -68,7 +68,7 @@ const dark: Palette = {
   accent: '#4c7dff',
   accent2: '#9b6bff',
   onAccent: '#ffffff',
-  bar: '#1e1e22',
+  bar: 'rgba(30,30,34,0.86)',
 
   running: '#30d158',
   runningPill: 'rgba(48,209,88,0.16)',
