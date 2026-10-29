@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   Calculator,
@@ -194,13 +194,13 @@ function Hero() {
 
 function Problems() {
   return (
-    <section className="av-wrap" style={{ paddingBottom: 80, display: 'grid', gap: 24 }}>
+    <section className="av-wrap av-reveal" style={{ paddingBottom: 80, display: 'grid', gap: 24 }}>
       <h2 className="av-h2" style={{ maxWidth: 720 }}>
         The hard part isn’t machining. It’s keeping the machines busy.
       </h2>
       <div className="grid gap-4 md:grid-cols-3">
         {PROBLEMS.map(([t, d]) => (
-          <div key={t} className="av-card" style={{ padding: 24, display: 'grid', gap: 8 }}>
+          <div key={t} className="av-card av-lift" style={{ padding: 24, display: 'grid', gap: 8 }}>
             <span style={{ fontSize: 18, fontWeight: 800 }}>{t}</span>
             <span className="av-muted" style={{ lineHeight: 1.55 }}>{d}</span>
           </div>
@@ -212,14 +212,14 @@ function Problems() {
 
 function Features() {
   return (
-    <section id="features" className="av-wrap" style={{ paddingBottom: 80, display: 'grid', gap: 24 }}>
+    <section id="features" className="av-wrap av-reveal" style={{ paddingBottom: 80, display: 'grid', gap: 24 }}>
       <div style={{ display: 'grid', gap: 10 }}>
         <h2 className="av-h2">Everything the shop needs to sell</h2>
         <p className="av-lead" style={{ maxWidth: 640 }}>The same app on your phone and here on the web.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map(([Icon, t, d]) => (
-          <div key={t} className="av-card" style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
+          <div key={t} className="av-card av-lift" style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
             <span style={{ width: 42, height: 42, borderRadius: 21, display: 'grid', placeItems: 'center', color: '#fff', background: 'linear-gradient(135deg, var(--accent), var(--accent2))' }}>
               <Icon size={20} aria-hidden="true" />
             </span>
@@ -234,11 +234,11 @@ function Features() {
 
 function How() {
   return (
-    <section id="how" className="av-wrap" style={{ paddingBottom: 80, display: 'grid', gap: 24 }}>
+    <section id="how" className="av-wrap av-reveal" style={{ paddingBottom: 80, display: 'grid', gap: 24 }}>
       <h2 className="av-h2">How it works</h2>
       <div className="grid gap-4 md:grid-cols-4">
         {STEPS.map(([t, d], i) => (
-          <div key={t} className="av-card" style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
+          <div key={t} className="av-card av-lift" style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
             <span style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-0.04em' }} className="av-grad">
               {i + 1}
             </span>
@@ -323,7 +323,7 @@ function Pilot() {
   )
 
   return (
-    <section id="pilot" className="av-wrap" style={{ paddingBottom: 80 }}>
+    <section id="pilot" className="av-wrap av-reveal" style={{ paddingBottom: 80 }}>
       <div className="grid gap-8 md:grid-cols-2 items-start">
         <div style={{ display: 'grid', gap: 16 }}>
           <h2 className="av-h2">Join the pilot</h2>
@@ -389,7 +389,27 @@ function Footer() {
   )
 }
 
+/** Fades each section up the first time it scrolls into view (all at once if the browser can't tell). */
+function useReveal() {
+  useEffect(() => {
+    const els = [...document.querySelectorAll('.av-reveal')]
+    if (!('IntersectionObserver' in window)) return els.forEach((el) => el.classList.add('av-in'))
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return
+          e.target.classList.add('av-in')
+          io.unobserve(e.target)
+        }),
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.08 },
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+}
+
 export default function App() {
+  useReveal()
   return (
     <div className="av">
       <Glow />
