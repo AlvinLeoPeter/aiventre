@@ -84,7 +84,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings/details" options={{ title: 'Shop details' }} />
         <Stack.Screen name="settings/billing" options={{ title: 'GST and bank' }} />
         <Stack.Screen name="settings/work" options={{ title: 'Work you do' }} />
-        <Stack.Screen name="settings/app" options={{ title: 'App and AI' }} />
+        <Stack.Screen name="settings/app" options={{ title: 'App settings' }} />
         <Stack.Screen name="open-jobs" options={{ title: 'Open jobs' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
         <Stack.Screen

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FindWorkSection, FreeHighlight } from '@/components/find-work';
 import { Ring } from '@/components/ring';
@@ -115,6 +116,7 @@ function DoneCheck({ view }: { view: MachineView }) {
 }
 
 export default function Today() {
+  const { c } = useTheme();
   const s = useStyles();
   const data = useData();
   const now = today();
@@ -150,6 +152,9 @@ export default function Today() {
             {name}
           </Text>
         </View>
+        <Press label="Settings" scale={0.92} style={s.gear} onPress={() => router.push('/settings/app')}>
+          <Ionicons name="settings-outline" size={22} color={c.text} />
+        </Press>
       </View>
 
       {views.length > 0 && <WeekStrip views={views} now={now} />}
@@ -247,6 +252,7 @@ const useStyles = makeStyles((c) => ({
   header: { flexDirection: 'row', alignItems: 'center', gap: S.md },
   avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '800', color: c.onPrimary },
+  gear: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' },
   shopName: { fontSize: 19, fontWeight: '800', color: c.text, letterSpacing: -0.3 },
   strip: { flexDirection: 'row', justifyContent: 'space-between' },
   day: { width: 48, alignItems: 'center', gap: 6, paddingVertical: 6, borderRadius: 16 },

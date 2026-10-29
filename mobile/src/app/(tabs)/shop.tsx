@@ -138,7 +138,7 @@ export default function ShopScreen() {
         <Row first icon="storefront-outline" label="Shop details" sub={shop.phone || shop.email ? [shop.phone, shop.email].filter(Boolean).join(' · ') : 'Name, contact, place, hour rate'} to="/settings/details" />
         <Row icon="receipt-outline" label="GST and bank" sub={shop.gstin ? `GSTIN ${shop.gstin}` : 'GSTIN, address, bank — for invoices'} to="/settings/billing" />
         <Row icon="construct-outline" label="Work you do" sub={work.length ? work.slice(0, 4).join(', ') : 'Work, materials, industries'} to="/settings/work" />
-        <Row icon="options-outline" label="App and AI" sub="Look, automatic searches, backup" to="/settings/app" />
+        <Row icon="settings-outline" label="App settings" sub="Light or dark, glow, AI, automatic searches, backup" to="/settings/app" />
       </Box>
     </Screen>
   );
