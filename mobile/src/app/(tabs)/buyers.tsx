@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { LeadRow } from '@/components/lead-card';
-import { Box, Button, Chip, Link, Press, Rule, Screen, Section } from '@/components/ui';
+import { Box, Button, Chip, Link, Rule, Screen, Section, Tile } from '@/components/ui';
 import { clearSearch, findWork, useSearches } from '@/lib/find';
 import { followUpDue, type Lead } from '@/lib/model';
 import { useOpenJobs } from '@/lib/open-jobs';
@@ -13,21 +13,14 @@ import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const FILTERS: { id: string; label: string; test: (l: Lead) => boolean }[] = [
   { id: 'todo', label: 'To do', test: (l) => l.status === 'new' || followUpDue(l) },
+  { id: 'new', label: 'To message', test: (l) => l.status === 'new' },
+  { id: 'due', label: 'Follow up', test: (l) => followUpDue(l) },
   { id: 'contacted', label: 'Contacted', test: (l) => l.status === 'contacted' },
   { id: 'talking', label: 'Talking', test: (l) => l.status === 'replied' || l.status === 'quote_requested' },
+  { id: 'won', label: 'Won', test: (l) => l.status === 'won' },
   { id: 'done', label: 'Won / not now', test: (l) => l.status === 'won' || l.status === 'lost' },
   { id: 'all', label: 'All', test: () => true },
 ];
-
-function Stat({ value, label, first }: { value: number; label: string; first?: boolean }) {
-  const s = useStyles();
-  return (
-    <View style={[s.stat, !first && s.statDivider]}>
-      <Text style={s.statValue}>{value}</Text>
-      <Text style={s.meta}>{label}</Text>
-    </View>
-  );
-}
 
 /** The AI's note about a search: three lines, the rest on tap. */
 function Summary({ text }: { text: string }) {
@@ -66,25 +59,6 @@ function FindMore() {
   );
 }
 
-/** Posted work (tenders, buy requirements) sits next to the buyers Aiventre finds. */
-function OpenJobsCard() {
-  const { c } = useTheme();
-  const s = useStyles();
-  const saved = useOpenJobs().jobs.filter((j) => j.saved).length;
-  return (
-    <Press onPress={() => router.push('/open-jobs')} scale={0.98} label="Open jobs">
-      <Box style={s.inline}>
-        <Ionicons name="megaphone-outline" size={22} color={c.muted} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.strong}>Open jobs</Text>
-          <Text style={s.meta}>{saved ? `${saved} saved · ` : ''}Tenders and buy requirements posted now</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={c.muted} />
-      </Box>
-    </Press>
-  );
-}
-
 export default function BuyersScreen() {
   const { c } = useTheme();
   const s = useStyles();
@@ -103,14 +77,25 @@ export default function BuyersScreen() {
     .sort((a, b) => Number(followUpDue(b)) - Number(followUpDue(a)) || (b.checks?.passed ?? -1) - (a.checks?.passed ?? -1));
 
   const activity = Object.entries(searches).filter(([id]) => data.machines.some((m) => m.id === id));
+  const savedJobs = useOpenJobs().jobs.filter((j) => j.saved).length;
+  const count = (id: string) => leads.filter(FILTERS.find((f) => f.id === id)!.test).length;
+  // Tapping a tile shows those buyers; tapping it again goes back to the to-do list.
+  const pick = (id: string) => setFilter((f) => (f === id ? 'todo' : id));
 
   return (
     <Screen title="Buyers" sub="Companies that could send you work">
+      {leads.length > 0 && (
+        <View style={s.tiles}>
+          <Tile tone="blue" icon="paper-plane" value={count('new')} label="To message" on={filter === 'new'} onPress={() => pick('new')} />
+          <Tile tone="green" icon="chatbubbles" value={count('talking')} label="Talking to you" on={filter === 'talking'} onPress={() => pick('talking')} />
+          <Tile tone="orange" icon="time" value={count('due')} label="Follow up today" on={filter === 'due'} onPress={() => pick('due')} />
+          <Tile tone="pink" icon="checkmark-done" value={count('won')} label="Orders won" on={filter === 'won'} onPress={() => pick('won')} />
+        </View>
+      )}
       <View style={s.row}>
-        <Button label="Ask Aiventre" icon="sparkles-outline" small flex onPress={() => router.push('/assistant')} />
-        <Button label="Sort a reply" icon="chatbubble-ellipses-outline" kind="secondary" small flex onPress={() => router.push('/reply')} />
+        <Button label="Ask Aiventre" icon="sparkles" kind="accent" flex onPress={() => router.push('/assistant')} />
+        <Button label={savedJobs ? `Open jobs · ${savedJobs}` : 'Open jobs'} icon="megaphone-outline" kind="secondary" flex onPress={() => router.push('/open-jobs')} />
       </View>
-      <OpenJobsCard />
       <FindMore />
 
       {activity.map(([id, st]) =>
@@ -143,14 +128,6 @@ export default function BuyersScreen() {
         ),
       )}
 
-      {leads.length > 0 && (
-        <Box flush style={{ flexDirection: 'row' }}>
-          <Stat first value={leads.filter((l) => l.status === 'new').length} label="to message" />
-          <Stat value={leads.filter((l) => followUpDue(l)).length} label="to follow up" />
-          <Stat value={leads.filter((l) => l.status === 'replied' || l.status === 'quote_requested').length} label="talking to you" />
-        </Box>
-      )}
-
       {leads.length === 0 && activity.length === 0 ? (
         <Box>
           <Text style={s.heading}>No buyers yet</Text>
@@ -164,7 +141,7 @@ export default function BuyersScreen() {
         <>
           <Section title="Your list" right={<Link label="+ Add" onPress={() => router.push('/buyer/new')} />} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters} style={{ marginHorizontal: -S.lg }}>
-            {FILTERS.map((f) => (
+            {FILTERS.filter((f) => !['new', 'due', 'won'].includes(f.id) || f.id === filter).map((f) => (
               <Chip key={f.id} label={`${f.label} ${leads.filter(f.test).length}`} selected={filter === f.id} onPress={() => setFilter(f.id)} />
             ))}
           </ScrollView>
@@ -192,6 +169,7 @@ export default function BuyersScreen() {
 
 const useStyles = makeStyles((c) => ({
   row: { flexDirection: 'row', gap: S.sm },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   between: { flexDirection: 'row', alignItems: 'flex-start', gap: S.md },
   inline: { flexDirection: 'row', alignItems: 'center', gap: S.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
@@ -199,15 +177,12 @@ const useStyles = makeStyles((c) => ({
   strong: { ...type.strong, color: c.text },
   body: { ...type.body, color: c.muted },
   meta: { ...type.meta, color: c.muted },
-  stat: { flex: 1, paddingVertical: 12, paddingHorizontal: S.md, gap: 2 },
-  statDivider: { borderLeftWidth: 1, borderLeftColor: c.rule },
-  statValue: { ...type.value, fontSize: 22, color: c.text },
   filters: { gap: S.sm, paddingHorizontal: S.lg },
   search: {
     minHeight: 44,
     borderRadius: R.pill,
     borderWidth: 1,
-    borderColor: c.border,
+    borderColor: c.edge,
     backgroundColor: c.surface,
     paddingHorizontal: S.lg,
     color: c.text,
