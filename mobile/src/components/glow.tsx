@@ -66,7 +66,8 @@ function Blob({ blob, from, to, width, move }: { blob: (typeof BLOBS)[number]; f
 export function Glow() {
   const { scheme } = useTheme();
   const { glow } = usePrefs();
-  const { width } = useWindowDimensions();
+  // On a wide browser window the app is a centred column, so size the glow to that column.
+  const width = Math.min(useWindowDimensions().width, 560);
   const focused = useIsFocused();
   const reduced = useReducedMotion();
   if (glow === 'off') return null;

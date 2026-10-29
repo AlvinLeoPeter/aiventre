@@ -7,7 +7,10 @@ import { accessToken } from './supabase';
  * only on the server; the phone sends the access code so strangers can't spend credits.
  */
 
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://aiventre.vercel.app').replace(/\/$/, '');
+// Opened on the Aiventre website (at /app), the server is the same site, so its own address
+// works — including on preview deployments. The phone app always calls the live server.
+const onSite = typeof window !== 'undefined' && typeof window.location?.pathname === 'string' && window.location.pathname.startsWith('/app');
+export const API_URL = onSite ? '' : (process.env.EXPO_PUBLIC_API_URL || 'https://aiventre.vercel.app').replace(/\/$/, '');
 
 export class ApiError extends Error {
   constructor(
