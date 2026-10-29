@@ -1,6 +1,21 @@
 {
   "functions": {
-    "api/*.js": { "maxDuration": 300 }
+    "api/*.js": {
+      "maxDuration": 300
+    }
   },
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/app",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/app/(.*)",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/((?!api/|app/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

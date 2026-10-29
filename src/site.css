@@ -1,0 +1,111 @@
+/* The landing page, in the app's design language: a pale (or true-black) ground with slow
+   colour glows drifting behind frosted-glass cards, big bold numbers, round-ended buttons. */
+
+.av {
+  --ground: #f4f5fa;
+  --surface: rgba(255, 255, 255, 0.66);
+  --border: rgba(255, 255, 255, 0.95);
+  --edge: rgba(21, 23, 28, 0.1);
+  --text: #15171c;
+  --muted: #5b6070;
+  --primary: #15171c;
+  --on-primary: #ffffff;
+  --accent: #2f4bd1;
+  --accent2: #7b4fe0;
+  --running: #2b8a3e;
+  --running-pill: #ddf3e2;
+  --idle: #c2410c;
+  --idle-pill: #ffe6d5;
+  --soon: #b45309;
+  --soon-pill: #fff1db;
+  --track: rgba(21, 23, 28, 0.07);
+  --g1: #8fa8ff;
+  --g2: #c9a8ff;
+  --g3: #8ee3cf;
+  --g-strength: 0.75;
+  min-height: 100vh;
+  background: var(--ground);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+@media (prefers-color-scheme: dark) {
+  .av {
+    --ground: #000000;
+    --surface: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.12);
+    --edge: rgba(255, 255, 255, 0.18);
+    --text: #f5f5f7;
+    --muted: #aeaeb2;
+    --primary: #f5f5f7;
+    --on-primary: #000000;
+    --accent: #4c7dff;
+    --accent2: #9b6bff;
+    --running: #30d158;
+    --running-pill: rgba(48, 209, 88, 0.16);
+    --idle: #ff9f0a;
+    --idle-pill: rgba(255, 159, 10, 0.18);
+    --soon: #ffd60a;
+    --soon-pill: rgba(255, 214, 10, 0.14);
+    --track: rgba(255, 255, 255, 0.1);
+    --g1: #2f4bd1;
+    --g2: #7a3fd1;
+    --g3: #0f7a6e;
+    --g-strength: 0.6;
+  }
+}
+
+/* The glow: three soft patches that drift and slowly change colour. */
+.av-glow { position: fixed; inset: 0; pointer-events: none; opacity: var(--g-strength); overflow: hidden; z-index: 0; }
+.av-glow span { position: absolute; border-radius: 50%; filter: blur(70px); }
+.av-glow span:nth-child(1) { width: 46vmax; height: 46vmax; left: -12vmax; top: -14vmax; background: var(--g1); animation: av-drift1 16s ease-in-out infinite, av-hue 22s ease-in-out infinite; }
+.av-glow span:nth-child(2) { width: 42vmax; height: 42vmax; right: -14vmax; top: 18vh; background: var(--g2); animation: av-drift2 19s ease-in-out infinite, av-hue 26s ease-in-out infinite; }
+.av-glow span:nth-child(3) { width: 40vmax; height: 40vmax; left: 10vw; bottom: -18vmax; background: var(--g3); animation: av-drift3 21s ease-in-out infinite, av-hue 24s ease-in-out infinite; }
+@keyframes av-drift1 { 50% { transform: translate(8vmax, 5vmax) scale(1.12); } }
+@keyframes av-drift2 { 50% { transform: translate(-7vmax, 8vmax) scale(0.94); } }
+@keyframes av-drift3 { 50% { transform: translate(6vmax, -6vmax); } }
+@keyframes av-hue { 50% { filter: blur(70px) hue-rotate(30deg); } }
+@media (prefers-reduced-motion: reduce) { .av-glow span { animation: none; } }
+
+.av-main { position: relative; z-index: 1; }
+.av-wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+.av-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.av-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px; padding: 0 24px; border-radius: 999px;
+  font-weight: 700; font-size: 15px; text-decoration: none; border: 1px solid transparent;
+  transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s;
+  cursor: pointer;
+}
+.av-btn:active { transform: scale(0.97); }
+.av-btn-primary { background: var(--primary); color: var(--on-primary); }
+.av-btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 10px 28px rgba(47, 75, 209, 0.25); }
+.av-btn-secondary { background: var(--surface); color: var(--text); border-color: var(--edge); backdrop-filter: blur(20px); }
+
+.av-h1 { font-size: clamp(40px, 6.4vw, 72px); line-height: 1.02; font-weight: 800; letter-spacing: -0.035em; margin: 0; }
+.av-h2 { font-size: clamp(28px, 4vw, 44px); line-height: 1.1; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+.av-lead { font-size: clamp(16px, 1.6vw, 19px); line-height: 1.55; color: var(--muted); margin: 0; }
+.av-muted { color: var(--muted); }
+.av-grad { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.av-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.av-pill::before { content: ''; width: 6px; height: 6px; border-radius: 3px; background: currentColor; }
+
+.av-input {
+  width: 100%; min-height: 50px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--edge);
+  background: var(--surface); color: var(--text); font: inherit; font-size: 16px; box-sizing: border-box;
+}
+.av-input:focus { outline: none; border-color: var(--text); }
+textarea.av-input { padding: 12px 14px; min-height: 110px; resize: vertical; }
+
+.av a.av-link { color: var(--accent); font-weight: 700; text-decoration: none; }
+.av a.av-link:hover { text-decoration: underline; }

@@ -4,18 +4,11 @@
 that buy machined parts, drafts emails the owner approves and sends, sorts replies, and helps turn a drawing
 into a quote. The owner makes the calls and wins the orders.
 
-- `/` — marketing site ("Join the pilot")
-- `/app` — the application (access-code protected)
-  - **Agent** — chat with the AI agent: *"I have idle VMC time this week — find me buyers."* It researches real
-    companies on the web and saves them to the buyer list with the source link. It never sends anything.
-  - **Buyers** — the pipeline: why each buyer fits, contacts, AI-drafted email → *Open in email app* →
-    *I've sent it* (sets a 4-day follow-up reminder), notes and history.
-  - **Replies** — paste a buyer's reply; the AI classifies it (quote request, call me, not now…), gives the next
-    step and a suggested response, and updates the buyer.
-  - **Quote** — upload a drawing (PDF/photo); the AI estimates operations and minutes per part. The app computes
-    the price from your hour rate, material and margin — every number editable.
-  - **My shop** — describe the shop in plain words; the AI builds the capability profile. Printable one-page
-    profile (`/app/profile/print`) and backup/restore.
+- `/` — the website (`src/`, Vite + React): what Aiventre does and "Join the pilot"
+- `/app` — the app itself: the **same code as the phone app** (`mobile/`, Expo), built for the
+  browser by `npm run build`, so the website and the phones always have the same features — Today,
+  Machines, Buyers (Find work, Open jobs, follow-ups, replies), Quote, Money (GST invoices), Trust
+  pack, Machine expert and settings. On a computer it shows as a centred phone-width column.
 - `/privacy`, `/terms`
 
 ## How it works
