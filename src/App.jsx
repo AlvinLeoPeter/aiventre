@@ -15,7 +15,7 @@ import {
   Wrench,
 } from 'lucide-react'
 
-import { CONTACT_EMAIL, CONTACT_PHONE, FORM_ENDPOINT, telHref, WHATSAPP_NUMBER, whatsappHref } from './config.js'
+import { CONTACT_EMAIL, CONTACT_PHONE, FORM_ENDPOINT, SUPABASE_KEY, SUPABASE_URL, telHref, WHATSAPP_NUMBER, whatsappHref } from './config.js'
 import './site.css'
 
 /* ----------------------------------------------------------------
@@ -263,38 +263,56 @@ function How() {
   )
 }
 
-const EMPTY = { name: '', shop: '', phone: '', city: '', message: '' }
+const EMPTY = { name: '', shop: '', phone: '', city: '', message: '', website: '' }
+
+/** Saves a pilot request in the database. Throws if it didn't go in. */
+async function saveRequest({ name, shop, phone, city, message }) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/pilot_requests`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ name: name.trim(), shop: shop.trim(), phone: phone.trim(), city: city.trim(), message: message.trim() }),
+  })
+  if (!res.ok) throw new Error(String(res.status))
+}
 
 function Pilot() {
   const [form, setForm] = useState(EMPTY)
-  const [status, setStatus] = useState('idle') // idle | sending | sent | mailto | error
+  const [status, setStatus] = useState('idle') // idle | sending | sent | mailto
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const mailto = () =>
     `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Pilot — ${form.shop || form.name}`)}&body=${encodeURIComponent(
       `Name: ${form.name}\nShop: ${form.shop}\nPhone: ${form.phone}\nCity: ${form.city}\n\n${form.message}`,
     )}`
 
+  // Saved in the database first. An email (Formspree) goes out too when one is set up; if the
+  // database can't be reached, the visitor's email app is the fallback so nothing is lost.
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.name || !form.phone) return
-    if (!FORM_ENDPOINT) {
-      window.location.href = mailto()
-      setStatus('mailto')
-      return
-    }
+    if (!form.name.trim() || !form.phone.trim()) return
+    // A hidden field people can't see; bots fill it in. Look as if it worked, save nothing.
+    if (form.website) return setStatus('sent')
     setStatus('sending')
-    try {
-      const res = await fetch(FORM_ENDPOINT, {
+    const saved = await saveRequest(form).then(
+      () => true,
+      () => false,
+    )
+    const emailed =
+      !!FORM_ENDPOINT &&
+      (await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ ...form, _subject: `Pilot — ${form.shop || form.name}` }),
-      })
-      if (!res.ok) throw new Error(String(res.status))
+        body: JSON.stringify({ ...form, website: undefined, _subject: `Pilot — ${form.shop || form.name}` }),
+      }).then(
+        (r) => r.ok,
+        () => false,
+      ))
+    if (saved || emailed) {
       setStatus('sent')
       setForm(EMPTY)
-    } catch {
-      setStatus('error')
+      return
     }
+    window.location.href = mailto()
+    setStatus('mailto')
   }
 
   const field = (k, label, props = {}) => (
@@ -346,10 +364,10 @@ function Pilot() {
                 Machines and work (optional)
                 <textarea className="av-input" value={form.message} onChange={set('message')} placeholder="e.g. 2 VMCs and 2 CNC lathes, EN8 and SS parts" />
               </label>
+              <input type="text" name="website" value={form.website} onChange={set('website')} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }} />
               <button type="submit" className="av-btn av-btn-primary" disabled={status === 'sending'}>
                 {status === 'sending' ? 'Sending…' : 'Send'}
               </button>
-              {status === 'error' && <span style={{ color: 'var(--idle)', fontSize: 14 }}>That didn’t go through. Try again, or write to {CONTACT_EMAIL}.</span>}
             </>
           )}
         </form>

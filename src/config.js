@@ -10,6 +10,11 @@ export const FORM_ENDPOINT = env.VITE_FORM_ENDPOINT || ''
 
 export const CONTACT_EMAIL = env.VITE_CONTACT_EMAIL || 'hello@aiventre.com'
 
+// Where the pilot form is saved: the same Supabase project as the app. The publishable key is
+// meant to be public; the database only lets it add pilot requests, never read them.
+export const SUPABASE_URL = (env.VITE_SUPABASE_URL || 'https://bxibjxdzmcdfsivzwtej.supabase.co').replace(/\/$/, '')
+export const SUPABASE_KEY = env.VITE_SUPABASE_KEY || 'sb_publishable_tQ9RXBg6IsJKEawwEeBi-A_ryio2r1h'
+
 // Display format, e.g. "+91 98xxx xxxxx". Digits are extracted for tel: links.
 export const CONTACT_PHONE = env.VITE_CONTACT_PHONE || ''
 
