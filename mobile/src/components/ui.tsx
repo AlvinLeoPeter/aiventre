@@ -13,6 +13,7 @@ import {
 import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Glow } from '@/components/glow';
@@ -449,6 +450,20 @@ export function Tile({
   return (
     <Press onPress={onPress} label={`${value} ${label}`} scale={0.96} style={{ flexBasis: basis, flexGrow: 1 }}>
       {body}
+    </Press>
+  );
+}
+
+/** A page's back arrow in a browser: back to where you came from, or to the start if you opened the page directly. */
+export function HeaderBack() {
+  const { c } = useTheme();
+  return (
+    <Press
+      label="Back"
+      scale={0.9}
+      style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: S.sm }}
+      onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+      <Ionicons name="chevron-back" size={22} color={c.text} />
     </Press>
   );
 }

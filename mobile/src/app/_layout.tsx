@@ -14,8 +14,10 @@ import { loadPhotos } from '@/lib/photos';
 import { startSync } from '@/lib/sync';
 import { loadPrefs } from '@/lib/prefs';
 import { BackdropGlow } from '@/components/glow';
+import { SideBar } from '@/components/tab-bar';
+import { HeaderBack } from '@/components/ui';
 import { PHONE_WIDTH, useWide } from '@/lib/layout';
-import { loadData, useReady } from '@/lib/store';
+import { loadData, useData, useReady } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -26,6 +28,7 @@ export default function RootLayout() {
   const { c, scheme } = useTheme();
   // A narrow browser window gets a centred phone-width column; a wide one the desktop layout.
   const wide = useWide();
+  const hasShop = !!useData().shop;
 
   useEffect(() => {
     // Screens' kept results load before the screens open, so they can start from them.
@@ -73,12 +76,16 @@ export default function RootLayout() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: c.ground, alignItems: 'center' }}>
         {wide && <BackdropGlow />}
-        <View style={{ flex: 1, width: '100%', maxWidth: Platform.OS === 'web' && !wide ? PHONE_WIDTH : undefined }}>
+        <View style={{ flex: 1, width: '100%', flexDirection: 'row', maxWidth: Platform.OS === 'web' && !wide ? PHONE_WIDTH : undefined }}>
+          {wide && hasShop && <SideBar />}
+          <View style={{ flex: 1 }}>
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: page },
               headerTintColor: c.text,
               headerShadowVisible: false,
+              // A browser page has no swipe-back, and pages opened as modals have no arrow at all.
+              ...(Platform.OS === 'web' && { headerLeft: () => <HeaderBack /> }),
               contentStyle: { backgroundColor: page },
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -99,11 +106,19 @@ export default function RootLayout() {
             <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Account' }} />
             <Stack.Screen
               name="new"
-              options={{ presentation: 'formSheet', title: 'New', headerShown: false, sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true, sheetCornerRadius: 28 }}
+              options={{
+                title: 'New',
+                headerShown: false,
+                // A browser has no sheets: there it's a card over the page instead (see new.tsx).
+                ...(Platform.OS === 'web'
+                  ? { presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }
+                  : { presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true, sheetCornerRadius: 28 }),
+              }}
             />
             <Stack.Screen name="invoice/[id]" options={{ title: '' }} />
             <Stack.Screen name="invoice/edit" options={{ title: 'Invoice' }} />
           </Stack>
+          </View>
         </View>
       </View>
     </ThemeProvider>

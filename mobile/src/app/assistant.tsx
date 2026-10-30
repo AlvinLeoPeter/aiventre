@@ -8,6 +8,7 @@ import { Markdown } from '@/components/chat';
 import { Link, Press, tap } from '@/components/ui';
 import { ask, type Entry, newChat, useChat } from '@/lib/assistant';
 import { useAIReady } from '@/lib/auth';
+import { useWide, WIDE_PAGE } from '@/lib/layout';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const SUGGESTIONS = [
@@ -45,6 +46,7 @@ export default function Assistant() {
   const { c } = useTheme();
   const s = useStyles();
   const insets = useSafeAreaInsets();
+  const wide = useWide();
   const { log, busy, busySince } = useChat();
   const aiReady = useAIReady();
   const [text, setText] = useState('');
@@ -66,7 +68,7 @@ export default function Assistant() {
   };
 
   return (
-    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={[s.screen, wide && WIDE_PAGE]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[s.header, { paddingTop: insets.top + S.sm }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={() => router.back()}>
