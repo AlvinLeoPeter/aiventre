@@ -10,6 +10,7 @@ import { useAIReady } from '@/lib/auth';
 import { CHAT_EDGE, choosePhoto, type PickedDrawing, takePhoto } from '@/lib/drawing';
 import { askExpert, type ExpertEntry, newExpertChat, useExpert } from '@/lib/expert';
 import { getData } from '@/lib/store';
+import { useWide, WIDE_PAGE } from '@/lib/layout';
 import { makeStyles, R, S, type, useTheme } from '@/lib/theme';
 
 const SUGGESTIONS = [
@@ -57,6 +58,7 @@ export default function Expert() {
   const { c } = useTheme();
   const s = useStyles();
   const insets = useSafeAreaInsets();
+  const wide = useWide();
   const { machine } = useLocalSearchParams<{ machine?: string }>();
   const { log, busy, busySince } = useExpert();
   const aiReady = useAIReady();
@@ -94,7 +96,7 @@ export default function Expert() {
   };
 
   return (
-    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={[s.screen, wide && WIDE_PAGE]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[s.header, { paddingTop: insets.top + S.sm }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={() => router.back()}>

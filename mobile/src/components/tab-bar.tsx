@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { Platform, Pressable, type StyleProp, Text, View, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { router } from 'expo-router';
+import { type Href, router, usePathname } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -129,23 +129,27 @@ const useStyles = makeStyles((c) => ({
 }));
 
 // The sidebar has room for every place, including the two the phone reaches from + and Today.
-const SIDE = [
-  { name: 'index', label: 'Dashboard', on: 'grid', off: 'grid-outline' },
-  { name: 'machines', label: 'Machines', on: 'cog', off: 'cog-outline' },
-  { name: 'buyers', label: 'Buyers', on: 'people', off: 'people-outline' },
-  { name: 'money', label: 'Money', on: 'wallet', off: 'wallet-outline' },
-  { name: 'quote', label: 'Quote', on: 'calculator', off: 'calculator-outline' },
-  { name: 'shop', label: 'My shop', on: 'storefront', off: 'storefront-outline' },
-] as const;
+// Each lights up on its own page and on the pages opened from it (a machine, a buyer, an invoice…).
+const SIDE: { to: Href; match: RegExp; label: string; on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap }[] = [
+  { to: '/', match: /^\/$/, label: 'Dashboard', on: 'grid', off: 'grid-outline' },
+  { to: '/machines', match: /^\/(machines|machine\/|job)/, label: 'Machines', on: 'cog', off: 'cog-outline' },
+  { to: '/buyers', match: /^\/(buyers|buyer\/|reply|open-jobs|assistant)/, label: 'Buyers', on: 'people', off: 'people-outline' },
+  { to: '/money', match: /^\/(money|invoice\/)/, label: 'Money', on: 'wallet', off: 'wallet-outline' },
+  { to: '/quote', match: /^\/quote/, label: 'Quote', on: 'calculator', off: 'calculator-outline' },
+  { to: '/shop', match: /^\/(shop|settings\/(details|billing|work)|trust|account)/, label: 'My shop', on: 'storefront', off: 'storefront-outline' },
+];
 
 // In a browser, Pressable also says whether the mouse is over it.
 const hover = (st: object) => !!(st as { hovered?: boolean }).hovered;
 
-/** On a computer: a glass sidebar on the left with every place, a New button and settings. */
-export function SideBar({ state, navigateToTab }: BottomTabBarProps) {
+/**
+ * On a computer: a glass sidebar on the left with every place, a New button and settings. It
+ * stays on every page — a machine, a buyer, a form — so you never lose your way around.
+ */
+export function SideBar() {
   const { c } = useTheme();
   const s = useSideStyles();
-  const current = state.routes[state.index]?.name;
+  const path = usePathname();
   return (
     <View style={s.side}>
       <View style={s.brand}>
@@ -160,17 +164,15 @@ export function SideBar({ state, navigateToTab }: BottomTabBarProps) {
       </Press>
       <View style={{ gap: 4 }}>
         {SIDE.map((t) => {
-          const route = state.routes.find((r) => r.name === t.name);
-          if (!route) return null;
-          const on = current === t.name;
+          const on = t.match.test(path);
           return (
             <Pressable
-              key={t.name}
+              key={t.label}
               accessibilityRole="tab"
               accessibilityLabel={t.label}
               accessibilityState={{ selected: on }}
               style={(st) => [s.item, on ? s.itemOn : hover(st) && s.itemHover]}
-              onPress={() => !on && navigateToTab(route.key)}>
+              onPress={() => path !== t.to && router.navigate(t.to)}>
               <Ionicons name={on ? t.on : t.off} size={20} color={on ? c.text : c.muted} />
               <Text style={[s.itemText, on && s.itemTextOn]}>{t.label}</Text>
             </Pressable>
@@ -178,9 +180,12 @@ export function SideBar({ state, navigateToTab }: BottomTabBarProps) {
         })}
       </View>
       <View style={{ flex: 1 }} />
-      <Pressable accessibilityRole="button" style={(st) => [s.item, hover(st) && s.itemHover]} onPress={() => router.push('/settings/app')}>
-        <Ionicons name="settings-outline" size={20} color={c.muted} />
-        <Text style={s.itemText}>Settings</Text>
+      <Pressable
+        accessibilityRole="button"
+        style={(st) => [s.item, path === '/settings/app' ? s.itemOn : hover(st) && s.itemHover]}
+        onPress={() => path !== '/settings/app' && router.navigate('/settings/app')}>
+        <Ionicons name={path === '/settings/app' ? 'settings' : 'settings-outline'} size={20} color={path === '/settings/app' ? c.text : c.muted} />
+        <Text style={[s.itemText, path === '/settings/app' && s.itemTextOn]}>Settings</Text>
       </Pressable>
     </View>
   );

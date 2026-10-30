@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +24,8 @@ export default function NewSheet() {
   const insets = useSafeAreaInsets();
   const tint = { accent: [c.accent, c.onAccent], running: [c.running, '#ffffff'], idle: [c.idle, '#ffffff'], soon: [c.soon, '#ffffff'] } as const;
 
-  return (
-    <View style={[s.sheet, { paddingBottom: insets.bottom + S.lg }]}>
+  const sheet = (
+    <View style={[s.sheet, { paddingBottom: insets.bottom + S.lg }, WEB && s.card]}>
       <Text style={s.title}>New</Text>
       {ITEMS.map((it) => (
         <Press
@@ -50,10 +50,23 @@ export default function NewSheet() {
       ))}
     </View>
   );
+  if (!WEB) return sheet;
+  // In a browser: a card in the middle over a dimmed page; a click outside closes it.
+  return (
+    <Pressable accessibilityLabel="Close" style={s.backdrop} onPress={() => router.back()}>
+      <Pressable style={{ width: '100%', maxWidth: 520 }} onPress={() => {}}>
+        {sheet}
+      </Pressable>
+    </Pressable>
+  );
 }
+
+const WEB = Platform.OS === 'web';
 
 const useStyles = makeStyles((c) => ({
   sheet: { backgroundColor: c.ground, paddingHorizontal: S.lg, paddingTop: S.xl, gap: S.sm },
+  card: { borderRadius: 28, borderWidth: 1, borderColor: c.border, paddingBottom: S.lg, boxShadow: '0 30px 80px rgba(0,0,0,0.35)' },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: S.lg, backgroundColor: 'rgba(0,0,0,0.45)' },
   title: { ...type.title, fontSize: 24, color: c.text, marginBottom: S.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md, borderRadius: R.box, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
   icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

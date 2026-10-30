@@ -2,7 +2,7 @@ import { Easing, Platform } from 'react-native';
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
-import { FloatingTabBar, SideBar } from '@/components/tab-bar';
+import { FloatingTabBar } from '@/components/tab-bar';
 import { useWide } from '@/lib/layout';
 import { useData } from '@/lib/store';
 
@@ -15,11 +15,10 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      tabBar={(props) => (wide ? <SideBar {...props} /> : <FloatingTabBar {...props} />)}
+      // On a computer the sidebar lives around every page (in the root layout), so no bar here.
+      tabBar={(props) => (wide ? null : <FloatingTabBar {...props} />)}
       screenOptions={{
         headerShown: false,
-        // On a computer the places sit in a sidebar on the left.
-        tabBarPosition: wide ? 'left' : 'bottom',
         // Like YouTube: the new tab is there almost at once (a 90 ms fade; with no animation at
         // all the old tab can stay on top on the web). The four everyday tabs load up front so
         // even the first switch is instant, and hidden tabs don't redraw while you're away.
